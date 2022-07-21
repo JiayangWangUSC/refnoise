@@ -55,18 +55,18 @@ recon_optimizer = optim.Adam(recon_model.parameters(),lr=3e-4)
 L2Loss = torch.nn.MSELoss()
 
 # %% sampling mask
-Mask = torch.zeros(396)
-Mask[torch.arange(130)*3] = 1
-Mask[torch.arange(186,210)] =1
+mask = torch.zeros(396)
+mask[torch.arange(130)*3] = 1
+mask[torch.arange(186,210)] =1
 # %%
 max_epochs = 50
-sigma = 0.4
+sigma = 0.2
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
     for train_batch in train_dataloader:
         batch_count = batch_count + 1
-        Mask = Mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(train_batch.size(0),16,384,1,2).to(device)
+        Mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(train_batch.size(0),16,384,1,2).to(device)
 
     # preprocessing    
         with torch.no_grad():
