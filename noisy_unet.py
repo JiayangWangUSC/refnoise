@@ -60,7 +60,7 @@ mask[torch.arange(130)*3] = 1
 mask[torch.arange(186,210)] =1
 # %%
 max_epochs = 50
-sigma = 0.2
+sigma = 0.4
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
