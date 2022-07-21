@@ -22,8 +22,8 @@ def data_transform(kspace, mask, target, data_attributes, filename, slice_num):
     return kspace
 
 train_data = mri_data.SliceDataset(
-    #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/test_brain/'),
-    root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain/train/'),
+    root=pathlib.Path('/home/wjy/Project/fastmri_dataset/test_brain/'),
+    #root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain/train/'),
     transform=data_transform,
     challenge='multicoil'
 )
@@ -34,8 +34,8 @@ def toIm(kspace):
     return image
 
 # %%
-model_pre = torch.load('/project/jhaldar_118/jiayangw/OptSamp/model/uni_model_sigma1')
-
+#model_pre = torch.load('/project/jhaldar_118/jiayangw/OptSamp/model/uni_model_sigma1')
+model_pre = torch.load('/home/wjy/Project/optsamp_models/uni_model_sigma1',map_location=torch.device('cpu'))
 # %% unet loader
 recon_model = Unet(
   in_chans = 32,
@@ -58,7 +58,6 @@ L2Loss = torch.nn.MSELoss()
 Mask = torch.zeros(396)
 Mask[torch.arange(130)*3] = 1
 Mask[torch.arange(186,210)] =1
-Mask = Mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(batch_size,16,384,1,2).to(device)
 # %%
 max_epochs = 50
 
@@ -67,7 +66,7 @@ for epoch in range(max_epochs):
     batch_count = 0    
     for train_batch in train_dataloader:
         batch_count = batch_count + 1
-        
+        Mask = Mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(train_batch.size(0),16,384,1,2).to(device)
     # preprocessing    
         with torch.no_grad():
             image = fastmri.ifft2c(train_batch).to(device)
@@ -94,3 +93,5 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/model_l2_clean")
+
+# %%
