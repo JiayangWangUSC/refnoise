@@ -96,3 +96,6 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/model_l2_noise"+str(sigma))
+
+
+# %%
