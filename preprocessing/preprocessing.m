@@ -51,5 +51,5 @@ end
 kdata = zeros(Ns,N1,N2,Nc,2);
 kdata(:,:,:,:,1) = real(kspace);
 kdata(:,:,:,:,2) = imag(kspace);
-h5write([newdatapath,dirname(dir_num).name],'/kspace',kspace);
+h5write([newdatapath,dirname(dir_num).name],'/kspace',kdata);
 end
