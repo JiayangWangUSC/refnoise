@@ -13,22 +13,11 @@ import matplotlib.pyplot as plt
 from torchvision.utils import save_image
 
 # %% data loader
-def data_transform(kspace, mask, target, data_attributes, filename, slice_num):
-    # Transform the kspace to tensor format
-    kspace = transforms.to_tensor(kspace)
-    image = fastmri.ifft2c(kspace)
-    image = image[:,torch.arange(191,575),:,:]
-    kspace = fastmri.fft2c(image)/5e-5
-    return kspace
-
-train_data = mri_data.SliceDataset(
-    #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/test_brain/'),
-    root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain/train/'),
-    transform=data_transform,
-    challenge='multicoil'
-)
 
 
+
+
+# %%
 def toIm(kspace): 
     image = fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(kspace)), dim=1)
     return image
