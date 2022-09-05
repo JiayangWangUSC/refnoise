@@ -1,13 +1,13 @@
 %%
 datapath = '/project/jhaldar_118/jiayangw/dataset/brain/train/';
 dirname = dir(datapath);
-N1 = 384; N2 = 396; Nc = 16; Ns = 8;
+N1 = 384; N2 = 396; Nc = 16; Ns = 8; Nt = 8;
 
 %%
 newdatapath = '/project/jhaldar_118/jiayangw/dataset/brain_clean/train/';
-for dir_num = 3:length(dirname)
-    h5create([newdatapath,dirname(dir_num).name],'/kspace',[Ns,N1,N2,Nc,2]);
-end
+%for dir_num = 3:length(dirname)
+%    h5create([newdatapath,dirname(dir_num).name],'/kspace',[Ns,N1,N2,Nc,2]);
+%end
 
 %%
 fft2c = @(x) fftshift(fft2(ifftshift(x)))/sqrt(size(x,1)*size(x,2))*4;
