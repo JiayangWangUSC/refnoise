@@ -57,7 +57,7 @@ end
 
 %% new dataset
 kspace_new = permute(kspace_new,[3,2,4,1]);
-kdata.r = real(kspace_new);
-kdata.i = real(kspace_new);
-h5write([newdatapath,dirname(dir_num).name],'/kspace',kdata);
+kd.r = real(kspace_new);
+kd.i = real(kspace_new);
+h5write([newdatapath,dirname(dir_num).name],'/kspace',kd);
 end
