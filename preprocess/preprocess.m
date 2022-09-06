@@ -16,8 +16,8 @@ ifft2c = @(x) fftshift(ifft2(ifftshift(x)))*sqrt(size(x,1)*size(x,2))/4;
 %%
 for dir_num = 3:length(dirname)
 %% slice selection, undersampling and whitening 
-kspace = h5read([datapath,dirname(dir_num).name],'/kspace');
-kspace = complex(kspace.r,kspace.i);
+kData = h5read([datapath,dirname(dir_num).name],'/kspace');
+kspace = complex(kData.r,kData.i);
 kspace = permute(kspace,[4,2,1,3]);
 
 kdata = reshape(kspace(1,:,:,:),2*N1,N2,Nc);
@@ -54,10 +54,9 @@ for s = 1:Ns
     kdata = fft2c(output);
     kspace_new(s,:,:,:) = kdata;
 end
-
-%% new dataset
 kspace_new = permute(kspace_new,[3,2,4,1]);
-kd.r = real(kspace_new);
-kd.i = real(kspace_new);
-h5write([newdatapath,dirname(dir_num).name],'/kspace',kd);
+%% new dataset
+kData.r = real(kspace_new);
+kData.i = real(kspace_new);
+hdf5write([newdatapath,dirname(dir_num).name],'/kspace',kData);
 end
