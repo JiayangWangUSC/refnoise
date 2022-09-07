@@ -1,13 +1,13 @@
 %%
-datapath = '/project/jhaldar_118/jiayangw/dataset/brain/train/';
+datapath = '/project/jhaldar_118/jiayangw/dataset/brain_clean/train/';
 dirname = dir(datapath);
 N1 = 384; N2 = 396; Nc = 16; Ns = 8; Nt = 8;
 
 %%
-newdatapath = '/project/jhaldar_118/jiayangw/dataset/brain_clean/train/';
-%for dir_num = 3:length(dirname)
-%    h5create([datapath,dirname(dir_num).name],'/kspace_clean',[Ns,N1,N2,Nc,2]);
-%end
+%newdatapath = '/project/jhaldar_118/jiayangw/dataset/brain_clean/train/';
+for dir_num = 3:length(dirname)
+    h5create([datapath,dirname(dir_num).name],'/kspace_clean',[N2,N1,2*Nc,Ns],'Datatype','single');
+end
 
 %%
 fft2c = @(x) fftshift(fft2(ifftshift(x)))/sqrt(size(x,1)*size(x,2))*4;
@@ -35,7 +35,6 @@ cov_inv = inv(cov);
 [U,S,V] = svd(cov_inv);
 W = (U*sqrt(S))';
 
-
 kspace_new = zeros(Ns,N1,N2,Nc);
 %% denoising
 for s = 1:Ns
@@ -56,7 +55,9 @@ for s = 1:Ns
 end
 kspace_new = permute(kspace_new,[3,2,4,1]);
 %% new dataset
-kData.r = real(kspace_new);
-kData.i = real(kspace_new);
-hdf5write([newdatapath,dirname(dir_num).name],'/kspace',kData);
+kdata = zeros(N2,N1,2*Nc,Ns);
+kdata(:,:,1:Nc,:) = real(kspace_new);
+kdata(:,:,Nc+1:2*Nc,:) = imag(kspace_new);
+kdata = single(kdata);
+h5write([datapath,dirname(dir_num).name],'/kspace_new',kdata);
 end

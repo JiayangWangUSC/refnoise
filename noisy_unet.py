@@ -15,17 +15,31 @@ from torchvision.utils import save_image
 from torch.utils.data import Dataset
 import h5py
 
+
 # %% data loader
+from my_data import *
 
+nc = 16
+nx = 384
+ny = 396
 
+def data_transform(kspace, mask, target, data_attributes, filename, slice_num):
+    # Transform the kspace to tensor format
+    kspace = transforms.to_tensor(kspace)
+    kspace = torch.cat((kspace[torch.arange(nc),:,:].unsqueeze(-1),kspace[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
+    return kspace
+
+train_data = SliceDataset(
+    root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
+    #root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/knee/train/'),
+    transform=data_transform,
+    challenge='multicoil'
+)
 
 # %%
 def toIm(kspace): 
     image = fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(kspace)), dim=1)
     return image
-
-# %%
-model_pre = torch.load('/project/jhaldar_118/jiayangw/OptSamp/model/uni_model_sigma1')
 
 # %% unet loader
 recon_model = Unet(
