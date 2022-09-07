@@ -36,7 +36,6 @@ train_data = SliceDataset(
     challenge='multicoil'
 )
 
-# %%
 def toIm(kspace): 
     image = fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(kspace)), dim=1)
     return image
@@ -45,7 +44,7 @@ def toIm(kspace):
 recon_model = Unet(
   in_chans = 32,
   out_chans = 32,
-  chans = 128,
+  chans = 256,
   num_pool_layers = 4,
   drop_prob = 0.0
 )
@@ -63,6 +62,7 @@ L2Loss = torch.nn.MSELoss()
 mask = torch.zeros(396)
 mask[torch.arange(130)*3] = 1
 mask[torch.arange(186,210)] =1
+
 # %%
 max_epochs = 50
 sigma = 0.4
@@ -73,16 +73,7 @@ for epoch in range(max_epochs):
         batch_count = batch_count + 1
         Mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(train_batch.size(0),16,384,1,2).to(device)
 
-    # preprocessing    
-        with torch.no_grad():
-            image = fastmri.ifft2c(train_batch).to(device)
-            image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1).to(device) 
-            image_output = model_pre(image_input).to(device)
-            image_pre = torch.cat((image_output[:,torch.arange(16),:,:].unsqueeze(4),image_output[:,torch.arange(16,32),:,:].unsqueeze(4)),4).to(device)
-            kspace = fastmri.fft2c(image_pre).to(device)
-            gt = toIm(kspace)
-            kspace_input = torch.mul(kspace,Mask).to(device)
-        
+ 
         torch.manual_seed(batch_count)
         noise = torch.mul(sigma*torch.rand_like(kspace_input),Mask)
         image = fastmri.ifft2c(kspace_input).to(device)
@@ -100,7 +91,7 @@ for epoch in range(max_epochs):
         recon_optimizer.step()
         recon_optimizer.zero_grad()
 
-    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/model_l2_noise"+str(sigma))
+#    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/model_l2_noise"+str(sigma))
 
 
 # %%
