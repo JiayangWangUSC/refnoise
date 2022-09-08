@@ -14,6 +14,7 @@ from torchvision.utils import save_image
 
 from torch.utils.data import Dataset
 import h5py
+import math
 
 
 # %% data loader
@@ -49,37 +50,39 @@ recon_model = Unet(
   drop_prob = 0.0
 )
 
-
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 8
-train_dataloader = torch.utils.data.DataLoader(train_data,batch_size,shuffle=True)
+train_dataloader = torch.utils.data.DataLoader(train_data,batch_size)
 recon_model.to(device)
 recon_optimizer = optim.Adam(recon_model.parameters(),lr=3e-4)
 L2Loss = torch.nn.MSELoss()
 
 # %% sampling mask
-mask = torch.zeros(396)
-mask[torch.arange(130)*3] = 1
+mask = torch.zeros(ny)
+mask[torch.arange(132)*3] = 1
 mask[torch.arange(186,210)] =1
+mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(1,nc,nx,1,2)
 
 # %%
-max_epochs = 50
-sigma = 0.4
+max_epochs = 20
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
     for train_batch in train_dataloader:
         batch_count = batch_count + 1
-        Mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(train_batch.size(0),16,384,1,2).to(device)
-
+        Mask = mask.repeat(train_batch.size(0),1,1,1,1).to(device)
  
         torch.manual_seed(batch_count)
-        noise = torch.mul(sigma*torch.rand_like(kspace_input),Mask)
-        image = fastmri.ifft2c(kspace_input).to(device)
+
+        noise = math.sqrt(0.5)*torch.randn_like(train_batch)
+        kspace = train_batch + noise
+        gt = toIm(kspace)
+
+        image = fastmri.ifft2c(torch.mul(Mask,kspace))     
         image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1).to(device) 
         image_output = recon_model(image_input).to(device)
-        image_recon = torch.cat((image_output[:,torch.arange(16),:,:].unsqueeze(4),image_output[:,torch.arange(16,32),:,:].unsqueeze(4)),4).to(device)
+        image_recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4).to(device)
         recon = fastmri.rss(fastmri.complex_abs(image_recon), dim=1)
         
         loss = L2Loss(recon.to(device),gt.to(device))
