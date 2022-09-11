@@ -19,7 +19,7 @@ from warnings import warn
 
 import h5py
 import numpy as np
-import pandas as pd
+#import pandas as pd
 import requests
 import torch
 import yaml
