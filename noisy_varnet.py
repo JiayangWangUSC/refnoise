@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from fastmri.data import transforms
-from fastmri.models import Unet, VarNet
+from fastmri.models import Unet
 import pathlib
 import numpy as np
 import torch.optim as optim
@@ -31,8 +31,8 @@ def data_transform(kspace, mask, target, data_attributes, filename, slice_num):
     return kspace
 
 train_data = SliceDataset(
-    #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
-    root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_clean/train/'),
+    root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
+    #root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_clean/train/'),
     transform=data_transform,
     challenge='multicoil'
 )
@@ -42,12 +42,15 @@ def toIm(kspace):
     return image
 
 # %% varnet loader
+from varnet import *
+
 recon_model = VarNet(
     num_cascades = 12,
     sens_chans = 16,
     sens_pools = 4,
     chans = 18,
-    pools = 4
+    pools = 4,
+    mask_center= True
 )
 
 # %% training settings
@@ -62,7 +65,7 @@ L2Loss = torch.nn.MSELoss()
 mask = torch.zeros(ny)
 mask[torch.arange(132)*3] = 1
 mask[torch.arange(186,210)] =1
-mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(1,nc,nx,1,2)
+mask = mask.bool().unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
 # %%
 max_epochs = 20
@@ -71,7 +74,7 @@ for epoch in range(max_epochs):
     batch_count = 0    
     for train_batch in train_dataloader:
         batch_count = batch_count + 1
-        Mask = mask.repeat(train_batch.size(0),1,1,1,1).to(device)
+        Mask = mask.unsqueeze(0).repeat(train_batch.size(0),1,1,1,1).to(device)
  
         torch.manual_seed(batch_count)
 
@@ -80,7 +83,7 @@ for epoch in range(max_epochs):
         gt = toIm(kspace)
 
         kspace_input = torch.mul(Mask,kspace.to(device)).to(device)   
-        recon = recon_model(kspace_input, Mask).to(device)
+        recon = recon_model(kspace_input, Mask, 24).to(device)
         
         loss = L2Loss(recon.to(device),gt.to(device))
 
@@ -92,3 +95,5 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_noisy")
+
+# %%
