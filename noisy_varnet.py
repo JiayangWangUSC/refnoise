@@ -41,14 +41,14 @@ def toIm(kspace):
     image = fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(kspace)), dim=1)
     return image
 
-# %% unet loader
+# %% varnet loader
 recon_model = VarNet(
-    num_cascades: int = 12,
-    sens_chans: int = 16,
-    sens_pools: int = 4,
-    chans: int = 18,
-    pools: int = 4,
-    mask_center: bool = True
+    num_cascades = 12,
+    sens_chans = 16,
+    sens_pools = 4,
+    chans = 18,
+    pool = 4,
+    mask_center = True
 )
 
 # %% training settings
