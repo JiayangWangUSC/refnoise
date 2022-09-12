@@ -48,7 +48,7 @@ recon_model = VarNet(
     num_cascades = 8,
     sens_chans = 16,
     sens_pools = 4,
-    chans = 18,
+    chans = 16,
     pools = 4,
     mask_center= True
 )
