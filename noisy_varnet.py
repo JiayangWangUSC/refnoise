@@ -80,7 +80,7 @@ for epoch in range(max_epochs):
         gt = toIm(kspace)
 
         kspace_input = torch.mul(Mask,kspace.to(device)).to(device)   
-        recon = recon_model(kspace_input, Mask, 24).to(device)
+        recon = recon_model(kspace_input, Mask).to(device)
         
         loss = L2Loss(recon.to(device),gt.to(device))
 
