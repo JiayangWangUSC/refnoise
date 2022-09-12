@@ -52,7 +52,7 @@ recon_model = Unet(
 
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-batch_size = 8
+batch_size = 4
 train_dataloader = torch.utils.data.DataLoader(train_data,batch_size)
 recon_model.to(device)
 recon_optimizer = optim.Adam(recon_model.parameters(),lr=3e-4)
