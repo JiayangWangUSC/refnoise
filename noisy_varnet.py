@@ -31,8 +31,8 @@ def data_transform(kspace, mask, target, data_attributes, filename, slice_num):
     return kspace
 
 train_data = SliceDataset(
-    #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
-    root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_clean/train/'),
+    root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
+    #root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_clean/train/'),
     transform=data_transform,
     challenge='multicoil'
 )
@@ -47,7 +47,8 @@ recon_model = VarNet(
     sens_chans = 16,
     sens_pools = 4,
     chans = 18,
-    pool = 4,
+    pools = 4,
+    mask_center = True
 )
 
 # %% training settings
