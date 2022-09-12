@@ -79,7 +79,7 @@ for epoch in range(max_epochs):
         kspace = (train_batch + noise).to(device)
         gt = toIm(kspace)
 
-        image = fastmri.ifft2c(torch.mul(Mask,kspace))     
+        image = fastmri.ifft2c(torch.mul(Mask.to(device),kspace.to(device))).to(device)   
         image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1).to(device) 
         image_output = recon_model(image_input).to(device)
         image_recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4).to(device)
