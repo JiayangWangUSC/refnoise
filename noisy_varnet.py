@@ -47,8 +47,7 @@ recon_model = VarNet(
     sens_chans = 16,
     sens_pools = 4,
     chans = 18,
-    pool = 4,
-    mask_center = True
+    pool = 4
 )
 
 # %% training settings
