@@ -49,6 +49,7 @@ recon_model = Unet(
   num_pool_layers = 4,
   drop_prob = 0.0
 )
+recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/unet_noisy")
 
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
