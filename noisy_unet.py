@@ -76,7 +76,7 @@ for epoch in range(max_epochs):
         torch.manual_seed(batch_count)
 
         noise = math.sqrt(0.5)*torch.randn_like(train_batch)
-        kspace = train_batch + noise
+        kspace = (train_batch + noise).to(device)
         gt = toIm(kspace)
 
         image = fastmri.ifft2c(torch.mul(Mask,kspace))     
