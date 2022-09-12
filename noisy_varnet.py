@@ -45,7 +45,7 @@ def toIm(kspace):
 from varnet import *
 
 recon_model = VarNet(
-    num_cascades = 12,
+    num_cascades = 8,
     sens_chans = 16,
     sens_pools = 4,
     chans = 18,
