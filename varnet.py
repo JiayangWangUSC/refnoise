@@ -226,7 +226,7 @@ class VarNet(nn.Module):
         num_cascades: int = 12,
         sens_chans: int = 8,
         sens_pools: int = 4,
-        chans: int = 18,
+        chans: int = 16,
         pools: int = 4,
         mask_center: bool = True,
     ):
