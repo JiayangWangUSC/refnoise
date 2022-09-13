@@ -43,7 +43,7 @@ def toIm(kspace):
 
 # %% varnet loader
 from varnet import *
-cascades = 6
+cascades = 4
 recon_model = VarNet(
     num_cascades = cascades,
     sens_chans = 16,
