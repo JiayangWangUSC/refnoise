@@ -43,9 +43,9 @@ def toIm(kspace):
 
 # %% varnet loader
 from varnet import *
-
+cascades = 8
 recon_model = VarNet(
-    num_cascades = 8,
+    num_cascades = cascades,
     sens_chans = 16,
     sens_pools = 4,
     chans = 16,
@@ -68,7 +68,7 @@ mask[torch.arange(186,210)] =1
 mask = mask.bool().unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
 # %%
-max_epochs = 20
+max_epochs = 100
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
@@ -93,7 +93,7 @@ for epoch in range(max_epochs):
         loss.backward()
         recon_optimizer.step()
         recon_optimizer.zero_grad()
-
-    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_noisy")
+    if (epoch + 1)%10 == 0:
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_noisy_cascades"+str(cascades)+"_epoch"+str(epoch))
 
 # %%

@@ -56,7 +56,7 @@ unet = torch.load('/home/wjy/Project/refnoise_model/unet_noisy',map_location=tor
 
 # %%
 with torch.no_grad():
-    kspace = test_data[0].unsqueeze(0)
+    kspace = test_data[1].unsqueeze(0)
     noise = math.sqrt(0.5)*torch.randn_like(kspace)
     kspace_noise = kspace + noise
 
@@ -72,5 +72,38 @@ with torch.no_grad():
     image_recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4)
     recon = fastmri.rss(fastmri.complex_abs(image_recon), dim=1)
 
-    plt.imshow(recon.detach().squeeze()/50,cmap='gray',vmax=1)
 # %%
+plt.imshow(recon.detach().squeeze()/50,cmap='gray',vmax=1)
+print(torch.norm(recon-gt)/torch.norm(gt))
+print(torch.norm(recon-gt_noise)/torch.norm(gt_noise))
+
+# %% varnet loader
+varnet = VarNet(
+    num_cascades = 8,
+    sens_chans = 16,
+    sens_pools = 4,
+    chans = 16,
+    pools = 4,
+    mask_center= True
+)
+varnet = torch.load('/home/wjy/Project/refnoise_model/varnet_noisy',map_location=torch.device('cpu'))
+
+
+# %%
+with torch.no_grad():
+    kspace = test_data[1].unsqueeze(0)
+    noise = math.sqrt(0.5)*torch.randn_like(kspace)
+    kspace_noise = kspace + noise
+
+    gt = toIm(kspace)
+    gt_noise = toIm(kspace_noise)
+
+    Mask = mask.unsqueeze(0)
+    kspace_undersample = torch.mul(kspace_noise,Mask)
+      
+    recon = varnet(kspace_undersample, Mask, 24)
+
+# %%
+plt.imshow(recon.detach().squeeze()/50,cmap='gray',vmax=1)
+print(torch.norm(recon-gt)/torch.norm(gt))
+print(torch.norm(recon-gt_noise)/torch.norm(gt_noise))

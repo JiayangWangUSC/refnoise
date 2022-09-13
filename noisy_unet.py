@@ -42,14 +42,15 @@ def toIm(kspace):
     return image
 
 # %% unet loader
+chans = 256
 recon_model = Unet(
   in_chans = 32,
   out_chans = 32,
-  chans = 256,
+  chans = chans,
   num_pool_layers = 4,
   drop_prob = 0.0
 )
-recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/unet_noisy")
+#recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/unet_noisy")
 
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -66,7 +67,7 @@ mask[torch.arange(186,210)] =1
 mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(1,nc,nx,1,2)
 
 # %%
-max_epochs = 20
+max_epochs = 100
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
@@ -95,4 +96,5 @@ for epoch in range(max_epochs):
         recon_optimizer.step()
         recon_optimizer.zero_grad()
 
-    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/unet_noisy")
+    if (epoch + 1)%10 == 0:
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_noisy_channels"+str(chans)+"_epoch"+str(epoch))
