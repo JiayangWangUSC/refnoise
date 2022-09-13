@@ -41,17 +41,16 @@ def toIm(kspace):
     image = fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(kspace)), dim=1)
     return image
 
-# %% varnet loader
-from varnet import *
-cascades = 4
-recon_model = VarNet(
-    num_cascades = cascades,
-    sens_chans = 16,
-    sens_pools = 4,
-    chans = 16,
-    pools = 4,
-    mask_center= True
+# %% unet loader
+chans = 128
+recon_model = Unet(
+  in_chans = 1,
+  out_chans = 1,
+  chans = chans,
+  num_pool_layers = 4,
+  drop_prob = 0.0
 )
+#recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/unet_noisy")
 
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -65,7 +64,7 @@ L2Loss = torch.nn.MSELoss()
 mask = torch.zeros(ny)
 mask[torch.arange(132)*3] = 1
 mask[torch.arange(186,210)] =1
-mask = mask.bool().unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
+mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(1,nc,nx,1,2)
 
 # %%
 max_epochs = 100
@@ -74,7 +73,7 @@ for epoch in range(max_epochs):
     batch_count = 0    
     for train_batch in train_dataloader:
         batch_count = batch_count + 1
-        Mask = mask.unsqueeze(0).repeat(train_batch.size(0),1,1,1,1).to(device)
+        Mask = mask.repeat(train_batch.size(0),1,1,1,1).to(device)
  
         torch.manual_seed(batch_count)
 
@@ -82,8 +81,9 @@ for epoch in range(max_epochs):
         kspace = (train_batch + noise).to(device)
         gt = toIm(kspace)
 
-        kspace_input = torch.mul(Mask,kspace.to(device)).to(device)   
-        recon = recon_model(kspace_input, Mask, 24).to(device)
+        image_input = toIm(torch.mul(Mask.to(device),kspace.to(device))).unsqueeze(1).to(device)
+        image_output = recon_model(image_input).to(device)
+        recon = image_output.squeeze()
         
         loss = L2Loss(recon.to(device),gt.to(device))
 
@@ -93,7 +93,8 @@ for epoch in range(max_epochs):
         loss.backward()
         recon_optimizer.step()
         recon_optimizer.zero_grad()
+
     if (epoch + 1)%10 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_noisy_cascades"+str(cascades)+"_epoch"+str(epoch+1))
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/1unet_noisy_channels"+str(chans)+"_epoch"+str(epoch+1))
 
 # %%
