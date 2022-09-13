@@ -14,4 +14,4 @@ module purge
 module load gcc/8.3.0
 module load cuda/11.2.0
 
-python /project/jhaldar_118/jiayangw/refnoise/1noisy_unet.py
+python /project/jhaldar_118/jiayangw/refnoise/noisy_1unet.py
