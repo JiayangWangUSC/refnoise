@@ -42,8 +42,8 @@ def toIm(kspace):
     return image
 
 # %% unet loader
-chans = 128
-layers = 5
+chans = 64
+layers = 6
 recon_model = Unet(
   in_chans = 1,
   out_chans = 1,
