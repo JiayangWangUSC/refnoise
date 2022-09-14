@@ -42,12 +42,13 @@ def toIm(kspace):
     return image
 
 # %% unet loader
-chans = 128
+chans = 512
+layers = 3
 recon_model = Unet(
   in_chans = 32,
   out_chans = 32,
   chans = chans,
-  num_pool_layers = 4,
+  num_pool_layers = layers,
   drop_prob = 0.0
 )
 #recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/unet_noisy")
@@ -97,4 +98,4 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     if (epoch + 1)%10 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_noisy_channels"+str(chans)+"_epoch"+str(epoch+1))
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_noisy_channels"+str(chans)+"_layers"+str(layers)+"_epoch"+str(epoch+1))
