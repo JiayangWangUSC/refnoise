@@ -46,7 +46,7 @@ def toIm(kspace):
 recon_model = Unet(
   in_chans = 32,
   out_chans = 32,
-  chans = 320,
+  chans = 256,
   num_pool_layers = 4,
   drop_prob = 0.0
 )
