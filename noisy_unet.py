@@ -42,13 +42,12 @@ def toIm(kspace):
     return image
 
 # %% unet loader
-chans = 64
-layers = 6
+
 recon_model = Unet(
-  in_chans = 32,
-  out_chans = 32,
-  chans = chans,
-  num_pool_layers = layers,
+  in_chans = 1,
+  out_chans = 1,
+  chans = 256,
+  num_pool_layers = 4,
   drop_prob = 0.0
 )
 #recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/unet_noisy")
@@ -68,7 +67,7 @@ mask[torch.arange(186,210)] =1
 mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(1,nc,nx,1,2)
 
 # %%
-max_epochs = 100
+max_epochs = 200
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
@@ -82,12 +81,10 @@ for epoch in range(max_epochs):
         kspace = (train_batch + noise).to(device)
         gt = toIm(kspace)
 
-        image = fastmri.ifft2c(torch.mul(Mask.to(device),kspace.to(device))).to(device)   
-        image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1).to(device) 
+        image_input = toIm(torch.mul(Mask.to(device),kspace.to(device))).unsqueeze(1).to(device)
         image_output = recon_model(image_input).to(device)
-        image_recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4).to(device)
-        recon = fastmri.rss(fastmri.complex_abs(image_recon),dim=1)
-
+        recon = image_output.squeeze()
+        
         loss = L2Loss(recon.to(device),gt.to(device))
 
         if batch_count%100 == 0:
@@ -97,5 +94,5 @@ for epoch in range(max_epochs):
         recon_optimizer.step()
         recon_optimizer.zero_grad()
 
-    if (epoch + 1)%10 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_noisy_channels"+str(chans)+"_layers"+str(layers)+"_epoch"+str(epoch+1))
+    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/unet_noisy")
+# %%

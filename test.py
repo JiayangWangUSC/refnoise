@@ -44,15 +44,31 @@ mask[torch.arange(132)*3] = 1
 mask[torch.arange(186,210)] =1
 mask = mask.bool().unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
+# %% single unet loader
+sunet =  torch.load('/home/wjy/Project/refnoise_model/1unet_noisy_channels256_layers4_epoch90',map_location=torch.device('cpu'))
+
+# %%
+with torch.no_grad():
+    kspace = test_data[1].unsqueeze(0)
+    torch.manual_seed(100)
+    noise = math.sqrt(0.5)*torch.randn_like(kspace)
+    kspace_noise = kspace + noise
+
+    gt = toIm(kspace)
+    gt_noise = toIm(kspace_noise)
+
+    Mask = mask.unsqueeze(0)
+    image_input = toIm(torch.mul(Mask,kspace)).unsqueeze(1)
+    image_output = sunet(image_input)
+    recon = image_output.squeeze()
+
+# %%
+#plt.imshow(recon.detach().squeeze()/50,cmap='gray',vmax=1)
+print(torch.norm(recon-gt)/torch.norm(gt))
+print(torch.norm(recon-gt_noise)/torch.norm(gt_noise))
+
 # %% unet loader
-unet = Unet(
-  in_chans = 32,
-  out_chans = 32,
-  chans = 256,
-  num_pool_layers = 4,
-  drop_prob = 0.0
-)
-unet = torch.load('/home/wjy/Project/refnoise_model/unet_noisy',map_location=torch.device('cpu'))
+unet = torch.load('/home/wjy/Project/refnoise_model/unet_noisy_channels256_layers4_epoch100',map_location=torch.device('cpu'))
 
 # %%
 with torch.no_grad():
@@ -69,29 +85,24 @@ with torch.no_grad():
     image = fastmri.ifft2c(torch.mul(Mask,kspace_undersample))
     image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1) 
     image_output = unet(image_input)
-    image_recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4)
-    recon = fastmri.rss(fastmri.complex_abs(image_recon), dim=1)
+    image_recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4).to(device)
+    recon = fastmri.rss(fastmri.complex_abs(image_recon),dim=1)
 
 # %%
-plt.imshow(recon.detach().squeeze()/50,cmap='gray',vmax=1)
+#plt.imshow(recon.detach().squeeze()/50,cmap='gray',vmax=1)
 print(torch.norm(recon-gt)/torch.norm(gt))
 print(torch.norm(recon-gt_noise)/torch.norm(gt_noise))
 
-# %% varnet loader
-varnet = VarNet(
-    num_cascades = 8,
-    sens_chans = 16,
-    sens_pools = 4,
-    chans = 16,
-    pools = 4,
-    mask_center= True
-)
-varnet = torch.load('/home/wjy/Project/refnoise_model/varnet_noisy',map_location=torch.device('cpu'))
 
 
 # %%
+mse = torch.zeros(3,10,2)
+# %% varnet loader
+varnet = torch.load('/home/wjy/Project/refnoise_model/varnet_noisy_cascades8_channels16_epoch100',map_location=torch.device('cpu'))
+
+# %%
 with torch.no_grad():
-    kspace = test_data[1].unsqueeze(0)
+    kspace = test_data[0].unsqueeze(0)
     noise = math.sqrt(0.5)*torch.randn_like(kspace)
     kspace_noise = kspace + noise
 
@@ -104,6 +115,6 @@ with torch.no_grad():
     recon = varnet(kspace_undersample, Mask, 24)
 
 # %%
-plt.imshow(recon.detach().squeeze()/50,cmap='gray',vmax=1)
+#plt.imshow(recon.detach().squeeze()/50,cmap='gray',vmax=1)
 print(torch.norm(recon-gt)/torch.norm(gt))
 print(torch.norm(recon-gt_noise)/torch.norm(gt_noise))
