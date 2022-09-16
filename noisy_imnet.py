@@ -31,8 +31,8 @@ def data_transform(kspace, mask, target, data_attributes, filename, slice_num):
     return kspace
 
 train_data = SliceDataset(
-    #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
-    root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_clean/train/'),
+    root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
+    #root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_clean/train/'),
     transform=data_transform,
     challenge='multicoil'
 )
@@ -46,8 +46,8 @@ def toIm(kspace):
 recon_model = Unet(
   in_chans = 32,
   out_chans = 32,
-  chans = 4,
-  num_pool_layers = 256,
+  chans = 384,
+  num_pool_layers = 4,
   drop_prob = 0.0
 )
 #recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/unet_noisy")
@@ -74,13 +74,13 @@ for epoch in range(max_epochs):
     for train_batch in train_dataloader:
         batch_count = batch_count + 1
         Mask = mask.repeat(train_batch.size(0),1,1,1,1).to(device)
- 
+    
         torch.manual_seed(batch_count)
-
+    
         noise = math.sqrt(0.5)*torch.randn_like(train_batch)
         kspace = (train_batch + noise).to(device)
         gt = toIm(kspace)
-
+    
         image = fastmri.ifft2c(torch.mul(Mask.to(device),kspace.to(device))).to(device)   
         image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1).to(device) 
         image_output = recon_model(image_input).to(device)
@@ -88,13 +88,12 @@ for epoch in range(max_epochs):
         recon = fastmri.rss(fastmri.complex_abs(image_recon),dim=1)
 
         loss = L2Loss(recon.to(device),gt.to(device))
-
+    
         if batch_count%100 == 0:
             print("batch:",batch_count,"train loss:",loss.item())
         
         loss.backward()
         recon_optimizer.step()
         recon_optimizer.zero_grad()
-
 
     torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/imnet_noisy")
