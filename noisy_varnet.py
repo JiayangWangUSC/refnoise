@@ -81,7 +81,7 @@ for epoch in range(max_epochs):
 
         noise = math.sqrt(0.5)*torch.randn_like(train_batch)
         kspace = (train_batch + noise).to(device)
-        gt = toIm(kspace)
+        gt = fastmri.ifft2c(kspace)
 
         kspace_input = torch.mul(Mask,kspace.to(device)).to(device)   
         recon = recon_model(kspace_input, Mask, 24).to(device)
