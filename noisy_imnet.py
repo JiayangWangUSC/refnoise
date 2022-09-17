@@ -79,14 +79,13 @@ for epoch in range(max_epochs):
     
         noise = math.sqrt(0.5)*torch.randn_like(train_batch)
         kspace = (train_batch + noise).to(device)
-        gt = toIm(kspace)
+        gt = fastmri.ifft2c(kspace)
     
         image = fastmri.ifft2c(torch.mul(Mask.to(device),kspace.to(device))).to(device)   
         image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1).to(device) 
         image_output = recon_model(image_input).to(device)
-        image_recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4).to(device)
-        recon = fastmri.rss(fastmri.complex_abs(image_recon),dim=1)
-
+        recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4).to(device)
+    
         loss = L2Loss(recon.to(device),gt.to(device))
     
         if batch_count%100 == 0:

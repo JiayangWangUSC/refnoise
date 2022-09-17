@@ -85,7 +85,7 @@ with torch.no_grad():
     image = fastmri.ifft2c(torch.mul(Mask,kspace_undersample))
     image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1) 
     image_output = unet(image_input)
-    image_recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4).to(device)
+    image_recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4)
     recon = fastmri.rss(fastmri.complex_abs(image_recon),dim=1)
 
 # %%
