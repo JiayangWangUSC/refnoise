@@ -84,12 +84,12 @@ for epoch in range(max_epochs):
 
         noise = sigma*math.sqrt(0.5)*torch.randn_like(train_batch)
         kspace = (train_batch + noise).to(device)
-        #gt = fastmri.ifft2c(kspace)
-        gt = toIm(kspace)
+        gt = fastmri.ifft2c(kspace)
+        #gt = toIm(kspace)
 
         kspace_input = torch.mul(Mask,kspace.to(device)).to(device)   
         recon = recon_model(kspace_input, Mask, 24).to(device)
-        recon = fastmri.rss(fastmri.complex_abs(recon),dim=1)
+        #recon = fastmri.rss(fastmri.complex_abs(recon),dim=1)
 
         loss = L2Loss(recon.to(device),gt.to(device))
 
@@ -100,6 +100,6 @@ for epoch in range(max_epochs):
         recon_optimizer.step()
         recon_optimizer.zero_grad()
     if (epoch + 1)%20 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_l2sc_noise"+str(sigma)+"_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_l2mc_noise"+str(sigma)+"_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
 
 # %%
