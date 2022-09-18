@@ -97,7 +97,7 @@ for epoch in range(max_epochs):
         loss.backward()
         recon_optimizer.step()
         recon_optimizer.zero_grad()
-    if (epoch + 1)%50 == 0:
+    if (epoch + 1)%20 == 0:
         torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_l2mc_noise"+str(sigma)+"_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
 
 # %%
