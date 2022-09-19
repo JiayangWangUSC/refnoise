@@ -91,7 +91,8 @@ MSE = torch.zeros(3,10)
 MSE_approx = torch.zeros(3,10)
 SURE = torch.zeros(3,10)
 # %% varnet loader
-varnet = torch.load('/home/wjy/Project/refnoise_model/varnet_noisy_cascades7_channels18_epoch10',map_location=torch.device('cpu'))
+epoch = 80
+varnet = torch.load('/home/wjy/Project/refnoise_model/varnet_noisy_cascades6_channels20_epoch'+str(epoch),map_location=torch.device('cpu'))
 
 # %%
 with torch.no_grad():
@@ -117,9 +118,9 @@ print(mse)
 print(mse_approx)
 
 # %% SURE
-epsilon = 1e-6
+epsilon = 1e-3
 mc_kspace = math.sqrt(0.5)*torch.randn_like(kspace_noise)
-mc_image = fastmri.ifft2c(torch.mul(mc_kspace,Mask))
+mc_image = fastmri.ifft2c(mc_kspace)
 kspace_mc = torch.mul(kspace_noise+epsilon*mc_kspace, Mask)
 recon_mc = varnet(kspace_mc, Mask, 24)
 
