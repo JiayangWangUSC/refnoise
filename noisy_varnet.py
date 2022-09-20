@@ -43,8 +43,8 @@ def toIm(kspace):
 
 # %% varnet loader
 from varnet import *
-cascades = 8
-chans = 16
+cascades = 7
+chans = 18
 recon_model = VarNet(
     num_cascades = cascades,
     sens_chans = 16,
@@ -89,7 +89,7 @@ for epoch in range(max_epochs):
         kspace_input = torch.mul(Mask,kspace.to(device)).to(device)   
         recon = recon_model(kspace_input, Mask, 24).to(device)
         recon = fastmri.rss(fastmri.complex_abs(recon),dim=1)
-        
+
         loss = L2Loss(recon.to(device),gt.to(device))
 
         if batch_count%100 == 0:
