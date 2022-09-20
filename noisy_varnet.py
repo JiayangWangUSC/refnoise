@@ -53,7 +53,6 @@ recon_model = VarNet(
     pools = 4,
     mask_center= True
 )
-#recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/varnet_noisy_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch100")
 
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -90,7 +89,7 @@ for epoch in range(max_epochs):
         kspace_input = torch.mul(Mask,kspace.to(device)).to(device)   
         recon = recon_model(kspace_input, Mask, 24).to(device)
         recon = fastmri.rss(fastmri.complex_abs(recon),dim=1)
-
+        
         loss = L2Loss(recon.to(device),gt.to(device))
 
         if batch_count%100 == 0:
@@ -99,7 +98,7 @@ for epoch in range(max_epochs):
         loss.backward()
         recon_optimizer.step()
         recon_optimizer.zero_grad()
-    if (epoch + 1)%20 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_l2sc_noise"+str(sigma)+"_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
+    if (epoch + 1)%10 == 0:
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_mse_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
 
 # %%

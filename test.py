@@ -34,9 +34,13 @@ test_data = SliceDataset(
     challenge='multicoil'
 )
 
-def toIm(kspace): 
+def KtoIm(kspace): 
     image = fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(kspace)), dim=1)
     return image
+
+def MtoIm(im):
+    Im = fastmri.rss(fastmri.complex_abs(im),dim=1)
+    return Im
 
 # %% sampling mask
 mask = torch.zeros(ny)
@@ -68,36 +72,40 @@ with torch.no_grad():
 # %%
 #plt.imshow(recon.detach().squeeze()/50,cmap='gray',vmax=1)
 L2Loss = torch.nn.MSELoss()
-MSE = L2Loss(recon,gt)
-MSEapprox = L2Loss(recon,gt_noise)
+mse = L2Loss(recon,gt)
+mse_approx = L2Loss(recon,gt_noise)
 
-print(MSE)
-print(MSEapprox)
+print(mse)
+print(mse_approx)
 
 # %% SURE
 epsilon = 1e-3
-mc_noise = epsilon*math.sqrt(0.5)*torch.randn_like(kspace_noise)
+mc_noise = math.sqrt(0.5)*torch.randn_like(kspace_noise)
 kspace_mc = torch.mul(kspace_noise + mc_noise, Mask)
 image = fastmri.ifft2c(kspace_mc)
 image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1) 
 image_output = imnet(image_input)
 recon_mc = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4)
 
-div = torch.mul(mc_noise, recon_mc-recon)/epsilon
-
 
 # %%
 MSE = torch.zeros(3,10)
 MSE_approx = torch.zeros(3,10)
 SURE = torch.zeros(3,10)
+
+
 # %% varnet loader
-epoch = 80
-varnet = torch.load('/home/wjy/Project/refnoise_model/varnet_noisy_cascades6_channels20_epoch'+str(epoch),map_location=torch.device('cpu'))
+epoch = 180
+sigma = 1
+cascades = 7
+chans = 18
+#varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_l2mc_noise"+str(sigma)+"_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
+varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_noisy_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():
     kspace = test_data[0].unsqueeze(0)
-    noise = math.sqrt(0.5)*torch.randn_like(kspace)
+    noise = sigma*math.sqrt(0.5)*torch.randn_like(kspace)
     kspace_noise = kspace + noise
 
     gt = fastmri.ifft2c(kspace)
@@ -116,14 +124,20 @@ mse_approx = torch.sum(torch.square(recon-gt_noise))/nx/ny/nc
 
 print(mse)
 print(mse_approx)
+# %%
+nrmse = torch.norm(MtoIm(recon)-MtoIm(gt))/torch.norm(MtoIm(gt))
+nrmse_approx = torch.norm(MtoIm(recon)-MtoIm(gt_noise))/torch.norm(MtoIm(gt_noise))
+print(nrmse)
+print(nrmse_approx)
 
 # %% SURE
-epsilon = 1e-3
+epsilon = 1e-6
 mc_kspace = math.sqrt(0.5)*torch.randn_like(kspace_noise)
 mc_image = fastmri.ifft2c(mc_kspace)
 kspace_mc = torch.mul(kspace_noise+epsilon*mc_kspace, Mask)
 recon_mc = varnet(kspace_mc, Mask, 24)
 
 div = torch.sum(torch.mul(mc_image, recon_mc-recon))/epsilon
-sure = mse_approx - 1 + 2/(nx*ny*nc)*div
+sure = mse_approx - sigma*sigma + 2*sigma*sigma/(nx*ny*nc)*div
 print(sure)
+# %%
