@@ -59,7 +59,7 @@ train_dataloader = torch.utils.data.DataLoader(train_data,batch_size)
 recon_model.to(device)
 recon_optimizer = optim.Adam(recon_model.parameters(),lr=3e-4)
 L2Loss = torch.nn.MSELoss()
-
+L1Loss = torch.nn.L1Loss()
 # %% sampling mask
 mask = torch.zeros(ny)
 mask[torch.arange(132)*3] = 1
@@ -87,7 +87,7 @@ for epoch in range(max_epochs):
         recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4).to(device)
         recon = fastmri.rss(fastmri.complex_abs(recon),dim=1)
 
-        loss = L2Loss(recon.to(device),gt.to(device))
+        loss = L1Loss(recon.to(device),gt.to(device))
     
         if batch_count%100 == 0:
             print("batch:",batch_count,"train loss:",loss.item())
@@ -96,4 +96,4 @@ for epoch in range(max_epochs):
         recon_optimizer.step()
         recon_optimizer.zero_grad()
     
-    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/imnet_mse")
+    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/imnet_mae")

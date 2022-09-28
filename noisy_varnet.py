@@ -61,7 +61,7 @@ train_dataloader = torch.utils.data.DataLoader(train_data,batch_size)
 recon_model.to(device)
 recon_optimizer = optim.Adam(recon_model.parameters(),lr=3e-4)
 L2Loss = torch.nn.MSELoss()
-
+L1Loss = torch.nn.L1Loss()
 # %% sampling mask
 mask = torch.zeros(ny)
 mask[torch.arange(132)*3] = 1
@@ -90,7 +90,7 @@ for epoch in range(max_epochs):
         recon = recon_model(kspace_input, Mask, 24).to(device)
         recon = fastmri.rss(fastmri.complex_abs(recon),dim=1)
 
-        loss = L2Loss(recon.to(device),gt.to(device))
+        loss = L1Loss(recon.to(device),gt.to(device))
 
         if batch_count%100 == 0:
             print("batch:",batch_count,"train loss:",loss.item())
@@ -99,6 +99,6 @@ for epoch in range(max_epochs):
         recon_optimizer.step()
         recon_optimizer.zero_grad()
     if (epoch + 1)%10 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_mse_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_mae_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
 
 # %%

@@ -95,10 +95,10 @@ SURE = torch.zeros(3,10)
 
 
 # %% varnet loader
-epoch = 180
+epoch = 190
 sigma = 1
-cascades = 7
-chans = 18
+cascades = 6
+chans = 20
 #varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_l2mc_noise"+str(sigma)+"_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_noisy_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
