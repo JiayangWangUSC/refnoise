@@ -50,16 +50,16 @@ mask = mask.bool().unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
 
 # %% imnet loader
-imnet = torch.load('/home/wjy/Project/refnoise_model/imnet_noisy',map_location=torch.device('cpu'))
+imnet = torch.load('/home/wjy/Project/refnoise_model/imnet_mse',map_location=torch.device('cpu'))
 
 # %%
 with torch.no_grad():
-    kspace = test_data[1].unsqueeze(0)
+    kspace = test_data[0].unsqueeze(0)
     noise = math.sqrt(0.5)*torch.randn_like(kspace)
     kspace_noise = kspace + noise
 
-    gt = fastmri.ifft2c(kspace)
-    gt_noise = fastmri.ifft2c(kspace_noise)
+    gt = KtoIm(kspace)
+    gt_noise = KtoIm(kspace_noise)
 
     Mask = mask.unsqueeze(0)
     kspace_undersample = torch.mul(kspace_noise,Mask)
@@ -69,38 +69,14 @@ with torch.no_grad():
     image_output = imnet(image_input)
     recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4)
 
-# %%
-#plt.imshow(recon.detach().squeeze()/50,cmap='gray',vmax=1)
-L2Loss = torch.nn.MSELoss()
-mse = L2Loss(recon,gt)
-mse_approx = L2Loss(recon,gt_noise)
-
-print(mse)
-print(mse_approx)
-
-# %% SURE
-epsilon = 1e-3
-mc_noise = math.sqrt(0.5)*torch.randn_like(kspace_noise)
-kspace_mc = torch.mul(kspace_noise + mc_noise, Mask)
-image = fastmri.ifft2c(kspace_mc)
-image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1) 
-image_output = imnet(image_input)
-recon_mc = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4)
-
-
-# %%
-MSE = torch.zeros(3,10)
-MSE_approx = torch.zeros(3,10)
-SURE = torch.zeros(3,10)
-
+    recon = MtoIm(recon)
 
 # %% varnet loader
-epoch = 190
+epoch = 120
 sigma = 1
-cascades = 6
-chans = 20
-#varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_l2mc_noise"+str(sigma)+"_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
-varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_noisy_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
+cascades = 7
+chans = 18
+varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mse_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():
@@ -108,36 +84,33 @@ with torch.no_grad():
     noise = sigma*math.sqrt(0.5)*torch.randn_like(kspace)
     kspace_noise = kspace + noise
 
-    gt = fastmri.ifft2c(kspace)
-    gt_noise = fastmri.ifft2c(kspace_noise)
+    gt = KtoIm(kspace)
+    gt_noise = KtoIm(kspace_noise)
 
     Mask = mask.unsqueeze(0)
     kspace_undersample = torch.mul(kspace_noise,Mask)
     
-    recon = varnet(kspace_undersample, Mask, 24)
+    recon_M = varnet(kspace_undersample, Mask, 24)
 
+    recon = MtoIm(recon_M)
 # %%
-#plt.imshow(recon.detach().squeeze()/50,cmap='gray',vmax=1)
+L1Loss = torch.nn.L1Loss()
 L2Loss = torch.nn.MSELoss()
-mse = torch.sum(torch.square(recon-gt))/nx/ny/nc
-mse_approx = torch.sum(torch.square(recon-gt_noise))/nx/ny/nc
 
-print(mse)
-print(mse_approx)
+
 # %%
-nrmse = torch.norm(MtoIm(recon)-MtoIm(gt))/torch.norm(MtoIm(gt))
-nrmse_approx = torch.norm(MtoIm(recon)-MtoIm(gt_noise))/torch.norm(MtoIm(gt_noise))
-print(nrmse)
-print(nrmse_approx)
+import scipy.special as ss
 
-# %% SURE
-epsilon = 1e-6
-mc_kspace = math.sqrt(0.5)*torch.randn_like(kspace_noise)
-mc_image = fastmri.ifft2c(mc_kspace)
-kspace_mc = torch.mul(kspace_noise+epsilon*mc_kspace, Mask)
-recon_mc = varnet(kspace_mc, Mask, 24)
+def NccLoss(x1,x2,sigma,nc):
+    x = x1*x2/(sigma*sigma/2)
+    y = torch.sum(torch.square(x1)/(sigma*sigma)-(torch.log(ss.ive(nc-1,x))+x)+(nc-1)*torch.log(x1))
+    return y/torch.sum(torch.ones_like(x))
 
-div = torch.sum(torch.mul(mc_image, recon_mc-recon))/epsilon
-sure = mse_approx - sigma*sigma + 2*sigma*sigma/(nx*ny*nc)*div
-print(sure)
+
 # %%
+print(L2Loss(recon,gt))
+print(L2Loss(recon,gt_noise))
+print(L1Loss(recon,gt))
+print(L1Loss(recon,gt_noise))
+print(NccLoss(recon,gt,sigma,nc)-NccLoss(gt,gt,sigma,nc))
+print(NccLoss(recon,gt_noise,sigma,nc)-NccLoss(gt_noise,gt_noise,sigma,nc))
