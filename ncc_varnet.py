@@ -83,7 +83,7 @@ for epoch in range(max_epochs):
         torch.manual_seed(batch_count)
     
         noise = sigma*math.sqrt(0.5)*torch.randn_like(train_batch)
-        kspace = (train_batch + noise).to(device)
+        kspace = (train_batch + noise)
   
         kspace_input = torch.mul(Mask,kspace.to(device)).to(device)   
         recon = recon_model(kspace_input, Mask, 24).to(device)
@@ -102,7 +102,7 @@ for epoch in range(max_epochs):
         loss.backward()
         recon_optimizer.step()
         recon_optimizer.zero_grad()
-        
+
     if (epoch + 1)%20 == 0:
         torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_ncc_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
 
