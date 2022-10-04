@@ -91,7 +91,7 @@ for epoch in range(max_epochs):
 
         with torch.no_grad():
             gt = toIm(kspace)
-            x = recon*gt/(sigma*sigma/2)
+            x = recon.cpu()*gt/(sigma*sigma/2)
             y = gt*(ss.ive(nc,x)/ss.ive(nc-1,x))
 
         loss = L2Loss(recon.to(device),y.to(device))
