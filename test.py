@@ -72,10 +72,10 @@ with torch.no_grad():
     recon = MtoIm(recon)
 
 # %% varnet loader
-epoch = 120
+epoch = 100
 sigma = 1
-cascades = 7
-chans = 18
+cascades = 6
+chans = 20
 varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mse_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
@@ -108,9 +108,14 @@ def NccLoss(x1,x2,sigma,nc):
 
 
 # %%
+sp = torch.ge(gt,0.03*torch.max(gt))
 print(L2Loss(recon,gt))
+print(L2Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
 print(L2Loss(recon,gt_noise))
 print(L1Loss(recon,gt))
+print(L1Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
 print(L1Loss(recon,gt_noise))
-print(NccLoss(recon,gt,sigma,nc)-NccLoss(gt,gt,sigma,nc))
+print(NccLoss(recon,gt,sigma,nc)-NccLoss(gt, gt,sigma,nc))
 print(NccLoss(recon,gt_noise,sigma,nc)-NccLoss(gt_noise,gt_noise,sigma,nc))
+
+# %%
