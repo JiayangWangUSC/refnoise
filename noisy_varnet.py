@@ -28,7 +28,7 @@ def data_transform(kspace, mask, target, data_attributes, filename, slice_num):
     # Transform the kspace to tensor format
     kspace = transforms.to_tensor(kspace)
     kspace = torch.cat((kspace[torch.arange(nc),:,:].unsqueeze(-1),kspace[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
-    return kspace
+    return 2e5*kspace
 
 train_data = SliceDataset(
     #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
@@ -62,13 +62,12 @@ recon_model.to(device)
 recon_optimizer = optim.Adam(recon_model.parameters(),lr=3e-4)
 L2Loss = torch.nn.MSELoss()
 L1Loss = torch.nn.L1Loss()
+
 # %% sampling mask
 mask = torch.zeros(ny)
 mask[torch.arange(132)*3] = 1
 mask[torch.arange(186,210)] =1
 mask = mask.bool().unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
-
-sigma = 1
 
 # %%
 max_epochs = 200
@@ -77,16 +76,10 @@ for epoch in range(max_epochs):
     batch_count = 0    
     for train_batch in train_dataloader:
         batch_count = batch_count + 1
-        Mask = mask.unsqueeze(0).repeat(train_batch.size(0),1,1,1,1).to(device)
- 
-        torch.manual_seed(batch_count)
+        Mask = mask.unsqueeze(0).repeat(train_batch.size(0),1,1,1,1).to(device) 
+        gt = toIm(train_batch)
 
-        noise = sigma*math.sqrt(0.5)*torch.randn_like(train_batch)
-        kspace = (train_batch + noise).to(device)
-        #gt = fastmri.ifft2c(kspace)
-        gt = toIm(kspace)
-
-        kspace_input = torch.mul(Mask,kspace.to(device)).to(device)   
+        kspace_input = torch.mul(Mask,train_batch.to(device)).to(device)   
         recon = recon_model(kspace_input, Mask, 24).to(device)
         recon = fastmri.rss(fastmri.complex_abs(recon),dim=1)
 
@@ -98,7 +91,7 @@ for epoch in range(max_epochs):
         loss.backward()
         recon_optimizer.step()
         recon_optimizer.zero_grad()
-    if (epoch + 1)%10 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_mae_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
+    if (epoch + 1)%20 == 0:
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_mae_acc3_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
 
 # %%
