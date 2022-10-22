@@ -1,14 +1,15 @@
 %%
-datapath = '/project/jhaldar_118/jiayangw/dataset/brain_clean/train/';
+%datapath = '/project/jhaldar_118/jiayangw/dataset/brain_clean/train/';
 %datapath = '/home/wjy/Project/fastmri_dataset/miniset_brain_clean/';
 dirname = dir(datapath);
 N1 = 384; N2 = 396; Nc = 16; Ns = 8;
 
 %%
 %newdatapath = '/project/jhaldar_118/jiayangw/dataset/brain_clean/train/';
-%for dir_num = 3:length(dirname)
-%    h5create([datapath,dirname(dir_num).name],'/kspace_clean',[N2,N1,2*Nc,Ns],'Datatype','single');
-%end
+for dir_num = 3:length(dirname)
+    h5create([datapath,dirname(dir_num).name],'/kspace_clean',[N2,N1,2*Nc,Ns],'Datatype','single');
+    h5create([datapath,dirname(dir_num).name],'/kspace_noisy',[N2,N1,2*Nc,Ns],'Datatype','single');
+end
 
 %%
 fft2c = @(x) fftshift(fft2(ifftshift(x)))/sqrt(size(x,1)*size(x,2));
@@ -18,7 +19,7 @@ ifft2c = @(x) fftshift(ifft2(ifftshift(x)))*sqrt(size(x,1)*size(x,2));
 for dir_num = 3:length(dirname)
 %% slice selection, undersampling and whitening 
 kData = h5read([datapath,dirname(dir_num).name],'/kspace');
-kspace = complex(kData.r,kData.i);
+kspace = complex(kData.r,kData.i)*2e5;
 kspace = permute(kspace,[4,2,1,3]);
 
 kdata = reshape(kspace(1,:,:,:),2*N1,N2,Nc);
@@ -32,7 +33,8 @@ cov_inv = inv(cov);
 W = (U*sqrt(S))';
 WW = U * sqrt(inv(S));
 
-kspace_new = zeros(Ns,N1,N2,Nc);
+kspace_clean = zeros(Ns,N1,N2,Nc);
+kspace_noisy = zeros(Ns,N1,N2,Nc);
 %% denoising
 for s = 1:Ns
     kdata = reshape(kspace(s,:,:,:),2*N1,N2,Nc);
@@ -46,17 +48,28 @@ for s = 1:Ns
     cov = 0.5*eye(2*Nc);
     output = OWT_MC_SURELET_denoise(input,'sym8',cov);
     output = complex(output(:,:,1:Nc),output(:,:,Nc+1:2*Nc));
-    output = output + sqrt(0.5)*complex(randn(size(output)),randn(size(output)));
-    output = reshape((WW*reshape(output,[],Nc).').',N1,N2,Nc);
+    output_clean = reshape((WW*reshape(output,[],Nc).').',N1,N2,Nc);
+    output_noisy = output + sqrt(0.5)*complex(randn(size(output)),randn(size(output)));
+    output_noisy = reshape((WW*reshape(output_noisy,[],Nc).').',N1,N2,Nc);
     
-    kdata = fft2c(output);
-    kspace_new(s,:,:,:) = kdata;
+
+    kspace_clean(s,:,:,:) = fft2c(output_clean);
+    kspace_noisy(s,:,:,:) = fft2c(output_noisy);
 end
-kspace_new = permute(kspace_new,[3,2,4,1]);
+kspace_clean = permute(kspace_clean,[3,2,4,1]);
+kspace_noisy = permute(kspace_noisy,[3,2,4,1]);
+
 %% new dataset
-kdata = zeros(N2,N1,2*Nc,Ns);
-kdata(:,:,1:Nc,:) = real(kspace_new);
-kdata(:,:,Nc+1:2*Nc,:) = imag(kspace_new);
-kdata = single(kdata);
-h5write([datapath,dirname(dir_num).name],'/kspace_clean',kdata);
+kdata_clean = zeros(N2,N1,2*Nc,Ns);
+kdata_clean(:,:,1:Nc,:) = real(kspace_clean);
+kdata_clean(:,:,Nc+1:2*Nc,:) = imag(kspace_clean);
+kdata_clean = single(kdata_clean);
+h5write([datapath,dirname(dir_num).name],'/kspace_clean',kdata_clean);
+
+kdata_noisy = zeros(N2,N1,2*Nc,Ns);
+kdata_noisy(:,:,1:Nc,:) = real(kspace_clean);
+kdata_noisy(:,:,Nc+1:2*Nc,:) = imag(kspace_clean);
+kdata_noisy = single(kdata_noisy);
+h5write([datapath,dirname(dir_num).name],'/kspace_noisy',kdata_noisy);
+
 end

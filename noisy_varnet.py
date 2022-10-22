@@ -28,7 +28,7 @@ def data_transform(kspace, mask, target, data_attributes, filename, slice_num):
     # Transform the kspace to tensor format
     kspace = transforms.to_tensor(kspace)
     kspace = torch.cat((kspace[torch.arange(nc),:,:].unsqueeze(-1),kspace[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
-    return 2e5*kspace
+    return kspace
 
 train_data = SliceDataset(
     #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
@@ -43,8 +43,8 @@ def toIm(kspace):
 
 # %% varnet loader
 from varnet import *
-cascades = 7
-chans = 18
+cascades = 8
+chans = 20
 recon_model = VarNet(
     num_cascades = cascades,
     sens_chans = 16,
