@@ -24,15 +24,15 @@ nc = 16
 nx = 384
 ny = 396
 
-def data_transform(kspace, mask, target, data_attributes, filename, slice_num):
+def data_transform(kspace, ncc_effect, mask, target, data_attributes, filename, slice_num):
     # Transform the kspace to tensor format
     kspace = transforms.to_tensor(kspace)
     kspace = torch.cat((kspace[torch.arange(nc),:,:].unsqueeze(-1),kspace[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
-    return kspace
+    return kspace, ncc_effect
 
 train_data = SliceDataset(
-    #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
-    root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_clean/train/'),
+    root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
+    #root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_clean/train/'),
     transform=data_transform,
     challenge='multicoil'
 )
