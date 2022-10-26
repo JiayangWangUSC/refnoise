@@ -368,21 +368,23 @@ class SliceDataset(torch.utils.data.Dataset):
         fname, dataslice, metadata = self.raw_samples[i]
 
         with h5py.File(fname, "r") as hf:
-            kspace = hf["kspace_noisy"][dataslice]
+            kspace_noisy = hf["kspace_noisy"][dataslice]
+
+            kspace_clean = hf["kspace_clean"][dataslice]
 
             ncc_effect = hf["ncc_effect"][dataslice]
 
-            mask = np.asarray(hf["mask"]) if "mask" in hf else None
+            #mask = np.asarray(hf["mask"]) if "mask" in hf else None
 
-            target = hf[self.recons_key][dataslice] if self.recons_key in hf else None
+            #target = hf[self.recons_key][dataslice] if self.recons_key in hf else None
 
             attrs = dict(hf.attrs)
             attrs.update(metadata)
 
         if self.transform is None:
-            sample = (kspace, ncc_effect, mask, target, attrs, fname.name, dataslice)
+            sample = (kspace_noisy, kspace_clean, ncc_effect)
         else:
-            sample = self.transform(kspace, ncc_effect, mask, target, attrs, fname.name, dataslice)
+            sample = self.transform(kspace_noisy, kspace_clean, ncc_effect)
 
         return sample
 

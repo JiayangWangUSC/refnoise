@@ -24,15 +24,19 @@ nc = 16
 nx = 384
 ny = 396
 
-def data_transform(kspace, ncc_effect, mask, target, data_attributes, filename, slice_num):
+def data_transform(kspace_noisy, kspace_clean, ncc_effect):
     # Transform the kspace to tensor format
-    kspace = transforms.to_tensor(kspace)
-    kspace = torch.cat((kspace[torch.arange(nc),:,:].unsqueeze(-1),kspace[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
-    return kspace, ncc_effect
+    ncc_effect = transforms.to_tensor(ncc_effect)
+    kspace_noisy = transforms.to_tensor(kspace_noisy)
+    kspace_noisy = torch.cat((kspace_noisy[torch.arange(nc),:,:].unsqueeze(-1),kspace_noisy[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
+    kspace_clean = transforms.to_tensor(kspace_clean)
+    kspace_clean = torch.cat((kspace_clean[torch.arange(nc),:,:].unsqueeze(-1),kspace_clean[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
+
+    return kspace_noisy
 
 train_data = SliceDataset(
-    root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
-    #root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_clean/train/'),
+    #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
+    root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_clean/train/'),
     transform=data_transform,
     challenge='multicoil'
 )
