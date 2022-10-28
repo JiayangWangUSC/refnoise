@@ -46,6 +46,23 @@ def MtoIm(im):
     Im = fastmri.rss(fastmri.complex_abs(im),dim=1)
     return Im
 
+# %% define loss
+L1Loss = torch.nn.L1Loss()
+L2Loss = torch.nn.MSELoss()
+
+import scipy.special as ss
+
+def NccLoss(x1,x2,ncc_effect):
+    L = ncc_effect[0,:,:].squeeze()
+    s2 = ncc_effect[1,:,:].squeeze()
+    x = x1*x2/s2
+    y = torch.sum(torch.square(x1)/(2*s2)-(torch.log(ss.ive(L-1,x))+x)+(L-1)*torch.log(x1))
+    return y/torch.sum(torch.ones_like(x))
+
+from pytorch_msssim import SSIM
+
+ssim_loss = SSIM(data_range=100, size_average=True, channel=1)
+
 # %% sampling mask
 mask = torch.zeros(ny)
 mask[torch.arange(99)*4] = 1
@@ -76,50 +93,39 @@ with torch.no_grad():
     recon = MtoIm(recon)
 
 # %% varnet loader
-epoch = 100
+epoch = 20
 sigma = 1
-cascades = 8
-chans = 16
-varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
+cascades = 7
+chans = 18
+varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mse_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():
-    kspace_noisy, kspace_clean, ncc_effect = test_data[0]
-    noise = sigma*math.sqrt(0.5)*torch.randn_like(kspace)
-    kspace_noise = kspace + noise
+    kspace_noisy, kspace_clean, ncc_effect = test_data[1]
 
-    gt = KtoIm(kspace)
-    gt_noise = KtoIm(kspace_noise)
+    kspace_noisy = kspace_noisy.unsqueeze(0) 
+    kspace_clean = kspace_clean.unsqueeze(0)
+    gt = KtoIm(kspace_clean)
+    gt_noise = KtoIm(kspace_noisy)
 
     Mask = mask.unsqueeze(0)
-    kspace_undersample = torch.mul(kspace_noise,Mask)
+    kspace_undersample = torch.mul(kspace_noisy,Mask)
     
     recon_M = varnet(kspace_undersample, Mask, 24)
 
     recon = MtoIm(recon_M)
-# %%
-L1Loss = torch.nn.L1Loss()
-L2Loss = torch.nn.MSELoss()
-
 
 # %%
-import scipy.special as ss
+print("MSE:",L2Loss(recon,gt))
+#print(L2Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
+print("MSE approx:",L2Loss(recon,gt_noise))
+print("MAE:",L1Loss(recon,gt))
+#print(L1Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
+print("MAE approx:",L1Loss(recon,gt_noise))
 
-def NccLoss(x1,x2,sigma,nc):
-    x = x1*x2/(sigma*sigma/2)
-    y = torch.sum(torch.square(x1)/(sigma*sigma)-(torch.log(ss.ive(nc-1,x))+x)+(nc-1)*torch.log(x1))
-    return y/torch.sum(torch.ones_like(x))
+print("SSIM:", 1-ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0)))
+print("SSIM approx:", 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0)))
 
-
-# %%
-sp = torch.ge(gt,0.03*torch.max(gt))
-print(L2Loss(recon,gt))
-print(L2Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
-print(L2Loss(recon,gt_noise))
-print(L1Loss(recon,gt))
-print(L1Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
-print(L1Loss(recon,gt_noise))
-print(NccLoss(recon,gt,sigma,nc)-NccLoss(gt, gt,sigma,nc))
-print(NccLoss(recon,gt_noise,sigma,nc)-NccLoss(gt_noise,gt_noise,sigma,nc))
+print("NCE:", NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect))
 
 # %%
