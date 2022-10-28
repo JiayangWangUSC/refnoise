@@ -24,11 +24,14 @@ nc = 16
 nx = 384
 ny = 396
 
-def data_transform(kspace, mask, target, data_attributes, filename, slice_num):
+def data_transform(kspace_noisy, kspace_clean, ncc_effect):
     # Transform the kspace to tensor format
-    kspace = transforms.to_tensor(kspace)
-    kspace = torch.cat((kspace[torch.arange(nc),:,:].unsqueeze(-1),kspace[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
-    return kspace
+    #ncc_effect = transforms.to_tensor(ncc_effect)
+    kspace_noisy = transforms.to_tensor(kspace_noisy)
+    kspace_noisy = torch.cat((kspace_noisy[torch.arange(nc),:,:].unsqueeze(-1),kspace_noisy[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
+    #kspace_clean = transforms.to_tensor(kspace_clean)
+    #kspace_clean = torch.cat((kspace_clean[torch.arange(nc),:,:].unsqueeze(-1),kspace_clean[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
+    return kspace_noisy
 
 train_data = SliceDataset(
     #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
@@ -42,7 +45,6 @@ def toIm(kspace):
     return image
 
 # %% unet loader
-
 recon_model = Unet(
   in_chans = 32,
   out_chans = 32,
@@ -50,7 +52,7 @@ recon_model = Unet(
   num_pool_layers = 4,
   drop_prob = 0.0
 )
-recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/imnet_mse")
+
 #print(sum(p.numel() for p in recon_model.parameters() if p.requires_grad))
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -60,9 +62,10 @@ recon_model.to(device)
 recon_optimizer = optim.Adam(recon_model.parameters(),lr=3e-4)
 L2Loss = torch.nn.MSELoss()
 L1Loss = torch.nn.L1Loss()
+
 # %% sampling mask
 mask = torch.zeros(ny)
-mask[torch.arange(132)*3] = 1
+mask[torch.arange(99)*4] = 1
 mask[torch.arange(186,210)] =1
 mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(1,nc,nx,1,2)
 
@@ -74,14 +77,10 @@ for epoch in range(max_epochs):
     for train_batch in train_dataloader:
         batch_count = batch_count + 1
         Mask = mask.repeat(train_batch.size(0),1,1,1,1).to(device)
+
+        gt = toIm(train_batch)
     
-        torch.manual_seed(batch_count)
-    
-        noise = math.sqrt(0.5)*torch.randn_like(train_batch)
-        kspace = (train_batch + noise).to(device)
-        gt = toIm(kspace)
-    
-        image = fastmri.ifft2c(torch.mul(Mask.to(device),kspace.to(device))).to(device)   
+        image = fastmri.ifft2c(torch.mul(Mask.to(device),train_batch.to(device))).to(device)   
         image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1).to(device) 
         image_output = recon_model(image_input).to(device)
         recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4).to(device)
@@ -96,4 +95,4 @@ for epoch in range(max_epochs):
         recon_optimizer.step()
         recon_optimizer.zero_grad()
     if (epoch + 1)%20 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/imnet_mse_epoch"+str(epoch+1))
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/imunet_mse_acc4_epoch"+str(epoch+1))
