@@ -24,15 +24,18 @@ nc = 16
 nx = 384
 ny = 396
 
-def data_transform(kspace, mask, target, data_attributes, filename, slice_num):
+def data_transform(kspace_noisy, kspace_clean, ncc_effect):
     # Transform the kspace to tensor format
-    kspace = transforms.to_tensor(kspace)
-    kspace = torch.cat((kspace[torch.arange(nc),:,:].unsqueeze(-1),kspace[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
-    return kspace
+    ncc_effect = transforms.to_tensor(ncc_effect)
+    kspace_noisy = transforms.to_tensor(kspace_noisy)
+    kspace_noisy = torch.cat((kspace_noisy[torch.arange(nc),:,:].unsqueeze(-1),kspace_noisy[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
+    #kspace_clean = transforms.to_tensor(kspace_clean)
+    #kspace_clean = torch.cat((kspace_clean[torch.arange(nc),:,:].unsqueeze(-1),kspace_clean[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
+    return kspace_noisy, ncc_effect
 
 train_data = SliceDataset(
     #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
-    root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_clean/train/'),
+    root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_copy/train/'),
     transform=data_transform,
     challenge='multicoil'
 )
@@ -45,6 +48,7 @@ def toIm(kspace):
 from varnet import *
 cascades = 6
 chans = 20
+
 recon_model = VarNet(
     num_cascades = cascades,
     sens_chans = 16,
@@ -65,36 +69,29 @@ L1Loss = torch.nn.L1Loss()
 
 # %% sampling mask
 mask = torch.zeros(ny)
-mask[torch.arange(132)*3] = 1
+mask[torch.arange(99)*4] = 1
 mask[torch.arange(186,210)] =1
 mask = mask.bool().unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
-
-sigma = 1
 
 # %%
 max_epochs = 100
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
-    for train_batch in train_dataloader:
+    for train_batch, ncc_effect in train_dataloader:
         batch_count = batch_count + 1
         Mask = mask.unsqueeze(0).repeat(train_batch.size(0),1,1,1,1).to(device)
-    
-        torch.manual_seed(batch_count)
-    
-        noise = sigma*math.sqrt(0.5)*torch.randn_like(train_batch)
-        kspace = (train_batch + noise)
   
-        kspace_input = torch.mul(Mask,kspace.to(device)).to(device)   
+        kspace_input = torch.mul(Mask,train_batch.to(device)).to(device)   
         recon = recon_model(kspace_input, Mask, 24).to(device)
         recon = fastmri.rss(fastmri.complex_abs(recon),dim=1)
 
         with torch.no_grad():
-            gt = toIm(kspace)
-            x = recon.cpu()*gt/(sigma*sigma/2)
-            y = gt*(ss.ive(nc,x)/ss.ive(nc-1,x))
+            gt = toIm(train_batch)
+            x = recon.cpu()*gt/(ncc_effect[:,1,:,:])
+            y = gt*(ss.ive(ncc_effect[:,0,:,:],x)/ss.ive(ncc_effect[:,0,:,:]-1,x))
 
-        loss = L2Loss(recon.to(device),y.to(device))
+        loss = torch.sum(torch.square(recon.to(device)-y.to(device))/ncc_effect[:,1,:,:].to(device))
 
         if batch_count%100 == 0:
             print("batch:",batch_count,"train loss:",loss.item())
@@ -104,7 +101,4 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     if (epoch + 1)%20 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_ncc_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
-
-
-# %%
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_ncc_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
