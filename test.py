@@ -93,15 +93,15 @@ with torch.no_grad():
     recon = MtoIm(recon)
 
 # %% varnet loader
-epoch = 20
+epoch = 100
 sigma = 1
-cascades = 7
-chans = 18
-varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mse_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
+cascades = 6
+chans = 20
+varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_ncc_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():
-    kspace_noisy, kspace_clean, ncc_effect = test_data[1]
+    kspace_noisy, kspace_clean, ncc_effect = test_data[2]
 
     kspace_noisy = kspace_noisy.unsqueeze(0) 
     kspace_clean = kspace_clean.unsqueeze(0)
@@ -116,16 +116,18 @@ with torch.no_grad():
     recon = MtoIm(recon_M)
 
 # %%
+sp = torch.ge(gt, 0.03*torch.max(gt))
 print("MSE:",L2Loss(recon,gt))
-#print(L2Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
-print("MSE approx:",L2Loss(recon,gt_noise))
+print("MSE roi:",L2Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
+#print("MSE approx:",L2Loss(recon,gt_noise))
 print("MAE:",L1Loss(recon,gt))
-#print(L1Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
-print("MAE approx:",L1Loss(recon,gt_noise))
+print("MAE roi:",L1Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
+#print("MAE approx:",L1Loss(recon,gt_noise))
 
-print("SSIM:", 1-ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0)))
-print("SSIM approx:", 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0)))
+print("SSIM:", ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0)))
+print("SSIM roi:", ssim_loss(torch.mul(recon,sp).unsqueeze(0),torch.mul(gt,sp).unsqueeze(0)))
+#print("SSIM approx:", 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0)))
 
-print("NCE:", NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect))
+#print("NCE:", NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect))
 
 # %%
