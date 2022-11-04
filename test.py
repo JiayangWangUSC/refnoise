@@ -97,11 +97,11 @@ epoch = 100
 sigma = 1
 cascades = 6
 chans = 20
-varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_ncc_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
+varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():
-    kspace_noisy, kspace_clean, ncc_effect = test_data[2]
+    kspace_noisy, kspace_clean, ncc_effect = test_data[0]
 
     kspace_noisy = kspace_noisy.unsqueeze(0) 
     kspace_clean = kspace_clean.unsqueeze(0)
