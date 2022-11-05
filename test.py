@@ -32,7 +32,7 @@ def data_transform(kspace_noisy, kspace_clean, ncc_effect):
     return kspace_noisy, kspace_clean, ncc_effect
 
 test_data = SliceDataset(
-    root=pathlib.Path('/home/wjy/Project/fastmri_dataset/miniset_brain_clean/'),
+    root=pathlib.Path('/home/wjy/Project/fastmri_dataset/brain_copy/'),
     #root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_clean/train/'),
     transform=data_transform,
     challenge='multicoil'
@@ -93,41 +93,55 @@ with torch.no_grad():
     recon = MtoIm(recon)
 
 # %% varnet loader
-epoch = 100
+epoch = 120
 sigma = 1
-cascades = 6
-chans = 20
-varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
+cascades = 7
+chans = 18
+varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mse_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
-with torch.no_grad():
-    kspace_noisy, kspace_clean, ncc_effect = test_data[0]
+test_count = 0
+mse, mse_approx, mae, mae_approx, ssim, ssim_approx, nce = 0, 0, 0, 0, 0, 0, 0
 
-    kspace_noisy = kspace_noisy.unsqueeze(0) 
-    kspace_clean = kspace_clean.unsqueeze(0)
-    gt = KtoIm(kspace_clean)
-    gt_noise = KtoIm(kspace_noisy)
+for kspace_noisy, kspace_clean, ncc_effect in test_data:
+    test_count += 1
+    with torch.no_grad():       
+        kspace_noisy = kspace_noisy.unsqueeze(0) 
+        kspace_clean = kspace_clean.unsqueeze(0)
+        gt = KtoIm(kspace_clean)
+        gt_noise = KtoIm(kspace_noisy)
 
-    Mask = mask.unsqueeze(0)
-    kspace_undersample = torch.mul(kspace_noisy,Mask)
-    
-    recon_M = varnet(kspace_undersample, Mask, 24)
+        # undersampling
+        Mask = mask.unsqueeze(0)
+        kspace_undersample = torch.mul(kspace_noisy,Mask)
 
-    recon = MtoIm(recon_M)
+        #reconstruction
+        recon_M = varnet(kspace_undersample, Mask, 24)
+        recon = MtoIm(recon_M)
+
+        # evaluation
+        mse += L2Loss(recon,gt)
+        mse_approx += L2Loss(recon,gt_noise)
+        mae += L1Loss(recon,gt)
+        mae_approx += L1Loss(recon,gt_noise)
+        ssim += 1-ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0))
+        ssim_approx += 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0))
+        nce += NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect)
+
+print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
 
 # %%
-sp = torch.ge(gt, 0.03*torch.max(gt))
-print("MSE:",L2Loss(recon,gt))
-print("MSE roi:",L2Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
+#sp = torch.ge(gt, 0.03*torch.max(gt))
+#print("MSE:",L2Loss(recon,gt))
+#print("MSE roi:",L2Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
 #print("MSE approx:",L2Loss(recon,gt_noise))
-print("MAE:",L1Loss(recon,gt))
-print("MAE roi:",L1Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
+#print("MAE:",L1Loss(recon,gt))
+#print("MAE roi:",L1Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
 #print("MAE approx:",L1Loss(recon,gt_noise))
 
-print("SSIM:", ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0)))
-print("SSIM roi:", ssim_loss(torch.mul(recon,sp).unsqueeze(0),torch.mul(gt,sp).unsqueeze(0)))
+#print("SSIM:", 1-ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0)))
+#print("SSIM roi:", ssim_loss(torch.mul(recon,sp).unsqueeze(0),torch.mul(gt,sp).unsqueeze(0)))
 #print("SSIM approx:", 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0)))
 
 #print("NCE:", NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect))
 
-# %%
