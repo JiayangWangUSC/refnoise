@@ -93,10 +93,10 @@ with torch.no_grad():
     recon = MtoIm(recon)
 
 # %% varnet loader
-epoch = 120
+epoch = 100
 sigma = 1
-cascades = 7
-chans = 18
+cascades = 8
+chans = 16
 varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mse_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
