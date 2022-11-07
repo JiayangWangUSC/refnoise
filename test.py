@@ -93,11 +93,11 @@ with torch.no_grad():
     recon = MtoIm(recon)
 
 # %% varnet loader
-epoch = 100
+epoch = 120
 sigma = 1
-cascades = 8
-chans = 16
-varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mse_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
+cascades = 6
+chans = 20
+varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
 test_count = 0
@@ -105,7 +105,19 @@ mse, mse_approx, mae, mae_approx, ssim, ssim_approx, nce = 0, 0, 0, 0, 0, 0, 0
 
 for kspace_noisy, kspace_clean, ncc_effect in test_data:
     test_count += 1
-    with torch.no_grad():       
+    with torch.no_grad():
+        kspace_noisy = kspace_noisy.unsqueeze(0) 
+        kspace_clean = kspace_clean.unsqueeze(0)
+        gt = KtoIm(kspace_clean)
+        gt_noise = KtoIm(kspace_noisy)
+
+        # undersampling
+        Mask = mask.unsqueeze(0)
+        kspace_undersample = torch.mul(kspace_noisy,Mask)
+
+        #reconstruction
+        recon_M = varnet(kspace_undersample, Mask, 24)
+        recon = MtoIm(recon_M)     
         kspace_noisy = kspace_noisy.unsqueeze(0) 
         kspace_clean = kspace_clean.unsqueeze(0)
         gt = KtoIm(kspace_clean)
@@ -130,8 +142,23 @@ for kspace_noisy, kspace_clean, ncc_effect in test_data:
 
 print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
 
+# %%  plot
+with torch.no_grad():    
+    kspace_noisy, kspace_clean, ncc_effect = test_data[0]
+    kspace_noisy = kspace_noisy.unsqueeze(0) 
+    kspace_clean = kspace_clean.unsqueeze(0)
+    gt = KtoIm(kspace_clean)
+    gt_noise = KtoIm(kspace_noisy)
+
+    # undersampling
+    Mask = mask.unsqueeze(0)
+    kspace_undersample = torch.mul(kspace_noisy,Mask)
+
+    #reconstruction
+    recon_M = varnet(kspace_undersample, Mask, 24)
+    recon = MtoIm(recon_M)
 # %%
-#sp = torch.ge(gt, 0.03*torch.max(gt))
+sp = torch.ge(gt, 0.03*torch.max(gt))
 #print("MSE:",L2Loss(recon,gt))
 #print("MSE roi:",L2Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
 #print("MSE approx:",L2Loss(recon,gt_noise))
@@ -139,9 +166,12 @@ print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,
 #print("MAE roi:",L1Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
 #print("MAE approx:",L1Loss(recon,gt_noise))
 
+print("NRMSE roi:", torch.norm(torch.mul(sp,recon-gt))/torch.norm(torch.mul(recon,sp)))
 #print("SSIM:", 1-ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0)))
-#print("SSIM roi:", ssim_loss(torch.mul(recon,sp).unsqueeze(0),torch.mul(gt,sp).unsqueeze(0)))
+print("SSIM roi:", ssim_loss(torch.mul(recon,sp).unsqueeze(0),torch.mul(gt,sp).unsqueeze(0)))
 #print("SSIM approx:", 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0)))
 
 #print("NCE:", NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect))
 
+
+# %%
