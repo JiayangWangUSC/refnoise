@@ -57,7 +57,7 @@ recon_model = VarNet(
     pools = 4,
     mask_center= True
 )
-recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch200")
+#recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch200")
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 2
@@ -96,6 +96,6 @@ for epoch in range(max_epochs):
         recon_optimizer.step()
         recon_optimizer.zero_grad()
     if (epoch + 1)%20 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+201))
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
 
 # %%
