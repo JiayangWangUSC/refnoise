@@ -93,11 +93,11 @@ with torch.no_grad():
     recon = MtoIm(recon)
 
 # %% varnet loader
-epoch = 120 #optimal : ncc(100), mse(100), mae(220)  
+epoch = 120 
 sigma = 1
 cascades = 12
 chans = 16
-varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mse_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
+varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():
@@ -157,6 +157,5 @@ for kspace_noisy, kspace_clean, ncc_effect in test_data:
         nce += NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect)
 
 print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
-
 
 # %%
