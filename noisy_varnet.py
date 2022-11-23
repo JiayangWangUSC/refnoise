@@ -96,6 +96,6 @@ for epoch in range(max_epochs):
         recon_optimizer.step()
         recon_optimizer.zero_grad()
     if (epoch + 1)%20 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch+1))
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/varnet_mae_acc2_cascades"+str(cascades)+"_channels"+str(chans))
 
 # %%
