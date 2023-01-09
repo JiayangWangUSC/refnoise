@@ -81,7 +81,7 @@ for epoch in range(max_epochs):
         Mask = mask.unsqueeze(0).repeat(kspace.size(0),1,1,1,1).to(device) 
         gt = toIm(kspace)
 
-        image_zf = fastmri.complex_mul(fastmri.complex_conj(sense_maps),fastmri.ifft2c(torch.mul(Mask,kspace.to(device)))) 
+        image_zf = fastmri.complex_mul(fastmri.complex_conj(sense_maps),fastmri.ifft2c(torch.mul(Mask,kspace))) 
         image_zf = torch.permute(torch.sum(image_zf, dim=1),(0,3,1,2)).to(device)
         sense_maps = torch.complex(sense_maps[:,:,:,:,0],sense_maps[:,:,:,:,1]).to(device)
         recon = recon_model(image_zf, sense_maps, Mask[:,0,:,:,0].squeeze().to(device)).to(device)
@@ -95,6 +95,7 @@ for epoch in range(max_epochs):
         loss.backward()
         recon_optimizer.step()
         recon_optimizer.zero_grad()
+
     if epoch > 40 and (epoch + 1)%10 == 0:
         torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc4_epochs"+str(epoch+1))
 
