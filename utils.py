@@ -43,6 +43,7 @@ def r2c(real_img, axis=0):
         complex_img = real_img[0] + 1j*real_img[1]
     elif axis == 1:
         complex_img = real_img[:,0] + 1j*real_img[:,1]
+        #complex_img = complex_img.unsqueeze(1)
     else:
         raise NotImplementedError
     return complex_img
