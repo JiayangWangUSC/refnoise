@@ -78,7 +78,7 @@ for epoch in range(max_epochs):
     batch_count = 0    
     for kspace, sense_maps in train_dataloader:
         batch_count = batch_count + 1
-        Mask = mask.unsqueeze(0).repeat(kspace.size(0),1,1,1,1).to(device) 
+        Mask = mask.unsqueeze(0).repeat(kspace.size(0),1,1,1,1)
         gt = toIm(kspace)
 
         image_zf = fastmri.complex_mul(fastmri.complex_conj(sense_maps),fastmri.ifft2c(torch.mul(Mask,kspace))) 
