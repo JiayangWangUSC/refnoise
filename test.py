@@ -72,26 +72,74 @@ mask = mask.bool().unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
 
 # %% imnet loader
-imnet = torch.load('/home/wjy/Project/refnoise_model/imnet_mse',map_location=torch.device('cpu'))
+epoch = 180
+imunet = torch.load('/home/wjy/Project/refnoise_model/imunet_mae_acc4_epoch'+str(epoch),map_location=torch.device('cpu'))
 
 # %%
 with torch.no_grad():
-    kspace = test_data[0].unsqueeze(0)
-    noise = math.sqrt(0.5)*torch.randn_like(kspace)
-    kspace_noise = kspace + noise
-
-    gt = KtoIm(kspace)
-    gt_noise = KtoIm(kspace_noise)
+    kspace_noisy, kspace_clean, ncc_effect, sense_maps = test_data[0]
+    kspace_noisy = kspace_noisy.unsqueeze(0) 
+    kspace_clean = kspace_clean.unsqueeze(0)
+    gt = KtoIm(kspace_clean)
+    gt_noise = KtoIm(kspace_noisy)
 
     Mask = mask.unsqueeze(0)
-    kspace_undersample = torch.mul(kspace_noise,Mask)
+    kspace_undersample = torch.mul(kspace_noisy,Mask)
 
     image = fastmri.ifft2c(kspace_undersample)
     image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1) 
-    image_output = imnet(image_input)
+    image_output = imunet(image_input)
     recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4)
 
     recon = MtoIm(recon)
+
+# %%
+sp = torch.ge(gt, 0.03*torch.max(gt))
+print("MSE:",L2Loss(recon,gt))
+#print("MSE roi:",L2Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
+
+print("MAE:",L1Loss(recon,gt))
+#print("MAE roi:",L1Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
+
+print("MSE approx:",L2Loss(recon,gt_noise))
+print("MAE approx:",L1Loss(recon,gt_noise))
+print("NCE:", NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect))
+
+
+# %%
+test_count = 0
+mse, mse_approx, mae, mae_approx, ssim, ssim_approx, nce = 0, 0, 0, 0, 0, 0, 0
+
+for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
+    test_count += 1
+    with torch.no_grad():
+        kspace_noisy = kspace_noisy.unsqueeze(0) 
+        kspace_clean = kspace_clean.unsqueeze(0)
+        sense_maps = sense_maps.unsqueeze(0)
+        gt = KtoIm(kspace_clean)
+        gt_noise = KtoIm(kspace_noisy)
+
+        # undersampling
+        Mask = mask.unsqueeze(0)
+        kspace_undersample = torch.mul(kspace_noisy,Mask)
+
+        image = fastmri.ifft2c(kspace_undersample)
+        image_input = torch.cat((image[:,:,:,:,0],image[:,:,:,:,1]),1) 
+        image_output = imunet(image_input)
+        recon = torch.cat((image_output[:,torch.arange(nc),:,:].unsqueeze(4),image_output[:,torch.arange(nc,2*nc),:,:].unsqueeze(4)),4)
+
+        recon = MtoIm(recon)
+
+        # evaluation
+        mse += L2Loss(recon,gt)
+        mse_approx += L2Loss(recon,gt_noise)
+        mae += L1Loss(recon,gt)
+        mae_approx += L1Loss(recon,gt_noise)
+        ssim += 1-ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0))
+        ssim_approx += 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0))
+        nce += NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect)
+
+print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
 
 # %% varnet loader
 epoch = 120 
@@ -161,7 +209,7 @@ print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,
 
 # %% modl loader
 epoch = 80
-modl = torch.load("/home/wjy/Project/refnoise_model/modl_mse_acc4_epochs"+str(epoch),map_location = 'cpu')
+modl = torch.load("/home/wjy/Project/refnoise_model/modl_mae_acc4_epochs"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():

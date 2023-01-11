@@ -52,7 +52,7 @@ recon_model = Unet(
   num_pool_layers = 4,
   drop_prob = 0.0
 )
-recon_model = torch.load('/project/jhaldar_118/jiayangw/refnoise/model/imunet_mse_acc4_epoch100')
+recon_model = torch.load('/project/jhaldar_118/jiayangw/refnoise/model/imunet_mse_acc4_epoch160')
 #print(sum(p.numel() for p in recon_model.parameters() if p.requires_grad))
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -70,7 +70,7 @@ mask[torch.arange(186,210)] =1
 mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(1,nc,nx,1,2)
 
 # %%
-max_epochs = 100
+max_epochs = 5
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
@@ -94,5 +94,5 @@ for epoch in range(max_epochs):
         loss.backward()
         recon_optimizer.step()
         recon_optimizer.zero_grad()
-    if (epoch + 1)%20 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/imunet_mse_acc4_epoch"+str(epoch+101))
+    #if (epoch + 1)%20 == 0:
+    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/imunet_mse_acc4_epoch"+str(epoch+161))
