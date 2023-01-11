@@ -55,6 +55,7 @@ recon_model = MoDL(
     n_layers = layers,
     k_iters = iters
 )
+recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4_epochs100")
 
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -96,7 +97,7 @@ for epoch in range(max_epochs):
         recon_optimizer.step()
         recon_optimizer.zero_grad()
 
-    if epoch > 40 and (epoch + 1)%10 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4_epochs"+str(epoch+1))
+    if (epoch + 1)%10 == 0:
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4_epochs"+str(epoch+101))
 
 # %%

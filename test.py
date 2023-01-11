@@ -21,15 +21,16 @@ nc = 16
 nx = 384
 ny = 396
 
-def data_transform(kspace_noisy, kspace_clean, ncc_effect):
+def data_transform(kspace_noisy, kspace_clean, ncc_effect,sense_maps):
     # Transform the kspace to tensor format
     ncc_effect = transforms.to_tensor(ncc_effect)
     kspace_noisy = transforms.to_tensor(kspace_noisy)
     kspace_noisy = torch.cat((kspace_noisy[torch.arange(nc),:,:].unsqueeze(-1),kspace_noisy[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
     kspace_clean = transforms.to_tensor(kspace_clean)
     kspace_clean = torch.cat((kspace_clean[torch.arange(nc),:,:].unsqueeze(-1),kspace_clean[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
-
-    return kspace_noisy, kspace_clean, ncc_effect
+    sense_maps = transforms.to_tensor(sense_maps)
+    sense_maps = torch.cat((sense_maps[torch.arange(nc),:,:].unsqueeze(-1),sense_maps[torch.arange(nc,2*nc),:,:].unsqueeze(-1)),-1)
+    return kspace_noisy, kspace_clean, ncc_effect, sense_maps
 
 test_data = SliceDataset(
     root=pathlib.Path('/home/wjy/Project/fastmri_dataset/brain_copy/'),
@@ -146,6 +147,77 @@ for kspace_noisy, kspace_clean, ncc_effect in test_data:
         #reconstruction
         recon_M = varnet(kspace_undersample, Mask, 24)
         recon = MtoIm(recon_M)     
+
+        # evaluation
+        mse += L2Loss(recon,gt)
+        mse_approx += L2Loss(recon,gt_noise)
+        mae += L1Loss(recon,gt)
+        mae_approx += L1Loss(recon,gt_noise)
+        ssim += 1-ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0))
+        ssim_approx += 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0))
+        nce += NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect)
+
+print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
+
+# %% modl loader
+epoch = 80
+modl = torch.load("/home/wjy/Project/refnoise_model/modl_mse_acc4_epochs"+str(epoch),map_location = 'cpu')
+
+# %%
+with torch.no_grad():
+    kspace_noisy, kspace_clean, ncc_effect, sense_maps = test_data[0]
+    kspace_noisy = kspace_noisy.unsqueeze(0) 
+    kspace_clean = kspace_clean.unsqueeze(0)
+    sense_maps = sense_maps.unsqueeze(0)
+    gt = KtoIm(kspace_clean)
+    gt_noise = KtoIm(kspace_noisy)
+
+    # undersampling
+    Mask = mask.unsqueeze(0)
+
+    #reconstruction
+    image_zf = fastmri.complex_mul(fastmri.complex_conj(sense_maps),fastmri.ifft2c(torch.mul(Mask,kspace_noisy))) 
+    image_zf = torch.permute(torch.sum(image_zf, dim=1),(0,3,1,2))
+    sense_maps = torch.complex(sense_maps[:,:,:,:,0],sense_maps[:,:,:,:,1])
+    recon = modl(image_zf, sense_maps, Mask[:,0,:,:,0].squeeze())
+    recon = fastmri.complex_abs(torch.permute(recon,(0,2,3,1)))   
+
+
+# %%
+sp = torch.ge(gt, 0.03*torch.max(gt))
+print("MSE:",L2Loss(recon,gt))
+#print("MSE roi:",L2Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
+
+print("MAE:",L1Loss(recon,gt))
+#print("MAE roi:",L1Loss(torch.mul(recon,sp),torch.mul(gt,sp)))
+
+print("MSE approx:",L2Loss(recon,gt_noise))
+print("MAE approx:",L1Loss(recon,gt_noise))
+print("NCE:", NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect))
+
+
+# %%
+# %%
+test_count = 0
+mse, mse_approx, mae, mae_approx, ssim, ssim_approx, nce = 0, 0, 0, 0, 0, 0, 0
+
+for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
+    test_count += 1
+    with torch.no_grad():
+        kspace_noisy = kspace_noisy.unsqueeze(0) 
+        kspace_clean = kspace_clean.unsqueeze(0)
+        sense_maps = sense_maps.unsqueeze(0)
+        gt = KtoIm(kspace_clean)
+        gt_noise = KtoIm(kspace_noisy)
+
+        # undersampling
+        Mask = mask.unsqueeze(0)
+        #reconstruction
+        image_zf = fastmri.complex_mul(fastmri.complex_conj(sense_maps),fastmri.ifft2c(torch.mul(Mask,kspace_noisy))) 
+        image_zf = torch.permute(torch.sum(image_zf, dim=1),(0,3,1,2))
+        sense_maps = torch.complex(sense_maps[:,:,:,:,0],sense_maps[:,:,:,:,1])
+        recon = modl(image_zf, sense_maps, Mask[:,0,:,:,0].squeeze())
+        recon = fastmri.complex_abs(torch.permute(recon,(0,2,3,1)))   
 
         # evaluation
         mse += L2Loss(recon,gt)
