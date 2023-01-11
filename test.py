@@ -73,7 +73,7 @@ mask = mask.bool().unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
 # %% imnet loader
 epoch = 180
-imunet = torch.load('/home/wjy/Project/refnoise_model/imunet_mae_acc4_epoch'+str(epoch),map_location=torch.device('cpu'))
+imunet = torch.load('/home/wjy/Project/refnoise_model/imunet_mse_acc4_epoch'+str(epoch),map_location=torch.device('cpu'))
 
 # %%
 with torch.no_grad():
@@ -142,7 +142,7 @@ for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
 print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
 
 # %% varnet loader
-epoch = 120 
+epoch = 140 
 sigma = 1
 cascades = 12
 chans = 16
@@ -150,7 +150,7 @@ varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mae_acc4_cascades"+
 
 # %%
 with torch.no_grad():
-    kspace_noisy, kspace_clean, ncc_effect = test_data[0]
+    kspace_noisy, kspace_clean, ncc_effect, sense_maps = test_data[0]
     kspace_noisy = kspace_noisy.unsqueeze(0) 
     kspace_clean = kspace_clean.unsqueeze(0)
     gt = KtoIm(kspace_clean)
