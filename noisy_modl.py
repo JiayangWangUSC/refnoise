@@ -55,14 +55,14 @@ recon_model = MoDL(
     n_layers = layers,
     k_iters = iters
 )
-recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc4_epochs100")
+recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc4_epochs150")
 
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 1
 train_dataloader = torch.utils.data.DataLoader(train_data,batch_size)
 recon_model.to(device)
-recon_optimizer = optim.Adam(recon_model.parameters(),lr=3e-4)
+recon_optimizer = optim.Adam(recon_model.parameters(),lr=1e-3)
 L2Loss = torch.nn.MSELoss()
 L1Loss = torch.nn.L1Loss()
 
@@ -98,6 +98,6 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     if (epoch + 1)%10 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc4_epochs"+str(epoch+101))
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc4_epochs"+str(epoch+51))
 
 # %%
