@@ -62,7 +62,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 1
 train_dataloader = torch.utils.data.DataLoader(train_data,batch_size)
 recon_model.to(device)
-recon_optimizer = optim.Adam(recon_model.parameters(),lr=1e-3)
+recon_optimizer = optim.Adam(recon_model.parameters(),lr=3e-4)
 L2Loss = torch.nn.MSELoss()
 L1Loss = torch.nn.L1Loss()
 
@@ -73,7 +73,7 @@ mask[torch.arange(186,210)] =1
 mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
 # %%
-max_epochs = 100
+max_epochs = 50
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
@@ -98,6 +98,6 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     if (epoch + 1)%10 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4_epochs"+str(epoch+51))
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4_epochs"+str(epoch+151))
 
 # %%
