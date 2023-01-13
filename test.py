@@ -209,7 +209,7 @@ print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,
 
 # %% modl loader
 epoch = 100
-modl = torch.load("/home/wjy/Project/refnoise_model/modl_mae_acc4_epochs"+str(epoch),map_location = 'cpu')
+modl = torch.load("/home/wjy/Project/refnoise_model/modl_mse_acc4_epochs"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():

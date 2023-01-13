@@ -55,7 +55,7 @@ recon_model = MoDL(
     n_layers = layers,
     k_iters = iters
 )
-recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc4_epochs100")
+recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4_epochs100")
 
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -88,7 +88,7 @@ for epoch in range(max_epochs):
         recon = recon_model(image_zf, sense_maps, Mask[:,0,:,:,0].squeeze().to(device)).to(device)
         recon = fastmri.complex_abs(torch.permute(recon,(0,2,3,1)))
 
-        loss = L2Loss(recon.to(device),gt.to(device))
+        loss = L1Loss(recon.to(device),gt.to(device))
 
         if batch_count%100 == 0:
             print("batch:",batch_count,"train loss:",loss.item())
@@ -98,6 +98,6 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     if (epoch + 1)%10 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc4_epochs"+str(epoch+101))
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4_epochs"+str(epoch+101))
 
 # %%
