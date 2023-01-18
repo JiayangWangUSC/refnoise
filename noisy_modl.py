@@ -37,8 +37,8 @@ def data_transform(kspace_noisy, kspace_clean, ncc_effect, sense_maps):
     return kspace_noisy, sense_maps
 
 train_data = SliceDataset(
-    root=pathlib.Path('/home/wjy/Project/fastmri_dataset/brain_copy/'),
-    #root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_copy/train/'),
+    #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/brain_copy/'),
+    root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_copy/train/'),
     transform=data_transform,
     challenge='multicoil'
 )
