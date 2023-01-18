@@ -37,8 +37,8 @@ def data_transform(kspace_noisy, kspace_clean, ncc_effect, sense_maps):
     return kspace_noisy, sense_maps
 
 train_data = SliceDataset(
-    #root=pathlib.Path('/home/wjy/Project/fastmri_dataset/brain_copy/'),
-    root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_copy/train/'),
+    root=pathlib.Path('/home/wjy/Project/fastmri_dataset/brain_copy/'),
+    #root = pathlib.Path('/project/jhaldar_118/jiayangw/dataset/brain_copy/train/'),
     transform=data_transform,
     challenge='multicoil'
 )
@@ -49,7 +49,7 @@ def toIm(kspace):
 
 # %% MoDL loader
 from modl_model import *
-layers = 5
+layers = 9
 iters = 10
 recon_model = MoDL(
     n_layers = layers,
@@ -73,7 +73,7 @@ mask[torch.arange(186,210)] =1
 mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
 # %%
-max_epochs = 20
+max_epochs = 1
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
@@ -86,8 +86,9 @@ for epoch in range(max_epochs):
         image_zf = torch.permute(torch.sum(image_zf, dim=1),(0,3,1,2)).to(device)
         maps = torch.complex(sense_maps[:,:,:,:,0],sense_maps[:,:,:,:,1]).to(device)
         recon = recon_model(image_zf, maps, Mask[:,0,:,:,0].squeeze().to(device)).to(device)
-        recon = fastmri.complex_mul(sense_maps.to(device),torch.permute(recon,(0,2,3,1)))
-        recon = fastmri.rss(fastmri.complex_abs(recon),dim=1)
+        recon = fastmri.complex_abs(torch.permute(recon,(0,2,3,1)))
+        #recon = fastmri.complex_mul(sense_maps.to(device),torch.permute(recon,(0,2,3,1)))
+        #recon = fastmri.rss(fastmri.complex_abs(recon),dim=1)
 
         loss = L1Loss(recon.to(device),gt.to(device))
 
@@ -99,6 +100,6 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     if (epoch + 1)%5 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4_layer"+str(layers)+"_epochs"+str(epoch+1))
+        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4_epochs"+str(epoch+1))
 
 # %%
