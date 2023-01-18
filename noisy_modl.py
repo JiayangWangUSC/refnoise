@@ -49,7 +49,7 @@ def toIm(kspace):
 
 # %% MoDL loader
 from modl_model import *
-layers = 9
+layers = 5
 iters = 10
 recon_model = MoDL(
     n_layers = layers,
