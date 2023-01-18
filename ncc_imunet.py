@@ -24,7 +24,7 @@ nc = 16
 nx = 384
 ny = 396
 
-def data_transform(kspace_noisy, kspace_clean, ncc_effect):
+def data_transform(kspace_noisy, kspace_clean, ncc_effect,sense_maps):
     # Transform the kspace to tensor format
     ncc_effect = transforms.to_tensor(ncc_effect)
     kspace_noisy = transforms.to_tensor(kspace_noisy)
@@ -70,7 +70,7 @@ mask[torch.arange(186,210)] =1
 mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(1,nc,nx,1,2)
 
 # %%
-max_epochs = 200
+max_epochs = 150
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
@@ -97,5 +97,5 @@ for epoch in range(max_epochs):
         loss.backward()
         recon_optimizer.step()
         recon_optimizer.zero_grad()
-    if (epoch + 1)%20 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/imunet_ncc_acc4_epoch"+str(epoch+1))
+    #if (epoch + 1)%20 == 0:
+    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/imunet_ncc_acc4")
