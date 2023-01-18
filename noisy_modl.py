@@ -49,20 +49,19 @@ def toIm(kspace):
 
 # %% MoDL loader
 from modl_model import *
-layers = 9
+layers = 5
 iters = 10
 recon_model = MoDL(
     n_layers = layers,
     k_iters = iters
 )
-#recon_model = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4_epochs150")
 
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 1
 train_dataloader = torch.utils.data.DataLoader(train_data,batch_size)
 recon_model.to(device)
-recon_optimizer = optim.Adam(recon_model.parameters(),lr=1e-2)
+recon_optimizer = optim.Adam(recon_model.parameters(),lr=3e-3)
 L2Loss = torch.nn.MSELoss()
 L1Loss = torch.nn.L1Loss()
 
@@ -73,7 +72,7 @@ mask[torch.arange(186,210)] =1
 mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
 # %%
-max_epochs = 1
+max_epochs = 100
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
@@ -99,7 +98,7 @@ for epoch in range(max_epochs):
         recon_optimizer.step()
         recon_optimizer.zero_grad()
 
-    if (epoch + 1)%5 == 0:
-        torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4_epochs"+str(epoch+1))
+    
+    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4")
 
 # %%
