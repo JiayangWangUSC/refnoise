@@ -86,7 +86,7 @@ for epoch in range(max_epochs):
         image_zf = torch.permute(torch.sum(image_zf, dim=1),(0,3,1,2)).to(device)
         maps = torch.complex(sense_maps[:,:,:,:,0],sense_maps[:,:,:,:,1]).to(device)
         recon = recon_model(image_zf, maps, Mask[:,0,:,:,0].squeeze().to(device)).to(device)
-        recon = fastmri.complex_mul(sense_maps,torch.permute(recon,(0,2,3,1)))
+        recon = fastmri.complex_mul(sense_maps.to(device),torch.permute(recon,(0,2,3,1)))
         recon = fastmri.rss(fastmri.complex_abs(recon),dim=1)
 
         loss = L1Loss(recon.to(device),gt.to(device))
