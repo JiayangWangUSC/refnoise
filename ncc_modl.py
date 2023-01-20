@@ -56,6 +56,8 @@ recon_model = MoDL(
     k_iters = iters
 )
 
+recon_modol = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_ncc_acc3")
+
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 1
