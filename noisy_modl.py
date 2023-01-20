@@ -89,7 +89,7 @@ for epoch in range(max_epochs):
         #recon = fastmri.complex_mul(sense_maps.to(device),torch.permute(recon,(0,2,3,1)))
         #recon = fastmri.rss(fastmri.complex_abs(recon),dim=1)
 
-        loss = L1Loss(recon.to(device),gt.to(device))
+        loss = L2Loss(recon.to(device),gt.to(device))
 
         if batch_count%100 == 0:
             print("batch:",batch_count,"train loss:",loss.item())
@@ -99,6 +99,6 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     
-    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc6")
+    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc6")
 
 # %%
