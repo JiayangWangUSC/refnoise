@@ -65,12 +65,12 @@ L1Loss = torch.nn.L1Loss()
 
 # %% sampling mask
 mask = torch.zeros(ny)
-mask[torch.arange(99)*4] = 1
+mask[torch.arange(66)*6] = 1
 mask[torch.arange(186,210)] =1
 mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(0).unsqueeze(4).repeat(1,nc,nx,1,2)
 
 # %%
-max_epochs = 50
+max_epochs = 100
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
@@ -98,4 +98,4 @@ for epoch in range(max_epochs):
         recon_optimizer.step()
         recon_optimizer.zero_grad()
     #if (epoch + 1)%20 == 0:
-    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/imunet_ncc_acc4")
+    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/imunet_ncc_acc6")
