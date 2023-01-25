@@ -35,7 +35,7 @@ for dir_num=3:length(dirname)
 %%
          ML2_avg = ML2;
          SAS_avg = SAS;
-         R = 4;
+         R = 1;
          for x = 1+R:N1-R
             for y = 1+R:N2-R
                ML2_avg(x,y) = sum(sum(ML2(x-R:x+R,y-R:y+R),1),2)/(2*R+1)^2;
