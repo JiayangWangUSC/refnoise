@@ -142,11 +142,11 @@ for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
 print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
 
 # %% varnet loader
-epoch = 140 
+epoch = 100
 sigma = 1
 cascades = 12
 chans = 16
-varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
+varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mse_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():
@@ -180,7 +180,7 @@ print("NCE:", NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_n
 test_count = 0
 mse, mse_approx, mae, mae_approx, ssim, ssim_approx, nce = 0, 0, 0, 0, 0, 0, 0
 
-for kspace_noisy, kspace_clean, ncc_effect in test_data:
+for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
     test_count += 1
     with torch.no_grad():
         kspace_noisy = kspace_noisy.unsqueeze(0) 
@@ -203,6 +203,8 @@ for kspace_noisy, kspace_clean, ncc_effect in test_data:
         mae_approx += L1Loss(recon,gt_noise)
         ssim += 1-ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0))
         ssim_approx += 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0))
+        if NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect) > 20:
+            break
         nce += NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect)
 
 print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
