@@ -61,7 +61,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 1
 train_dataloader = torch.utils.data.DataLoader(train_data,batch_size)
 recon_model.to(device)
-recon_optimizer = optim.Adam(recon_model.parameters(),lr=3e-3)
+recon_optimizer = optim.Adam(recon_model.parameters(),lr=1e-3)
 L2Loss = torch.nn.MSELoss()
 L1Loss = torch.nn.L1Loss()
 
