@@ -72,8 +72,8 @@ mask = mask.bool().unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
 
 # %% imnet loader
-epoch = 164
-imunet = torch.load('/home/wjy/Project/refnoise_model/imunet_mse_acc4_epoch'+str(epoch),map_location=torch.device('cpu'))
+epoch = 160
+imunet = torch.load('/home/wjy/Project/refnoise_model/imunet_mae_acc4_epoch'+str(epoch),map_location=torch.device('cpu'))
 
 # %%
 with torch.no_grad():
