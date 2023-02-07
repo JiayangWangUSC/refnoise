@@ -72,7 +72,7 @@ mask[torch.arange(186,210)] =1
 mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
 # %%
-max_epochs = 5
+max_epochs = 50
 for epoch in range(max_epochs):
     print("epoch:",epoch+1)
     batch_count = 0    
@@ -99,6 +99,6 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     
-    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc4_epoch_"+str(epoch+101))
+    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc4")
 
 # %%

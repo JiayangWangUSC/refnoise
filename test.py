@@ -142,11 +142,11 @@ for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
 print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
 
 # %% varnet loader
-epoch = 100
+epoch = 160
 sigma = 1
-cascades = 12
+cascades = 8
 chans = 16
-varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mse_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
+varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():
@@ -210,8 +210,8 @@ for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
 print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
 
 # %% modl loader
-epoch = 130
-modl = torch.load("/home/wjy/Project/refnoise_model/modl_mae_acc4_epochs"+str(epoch),map_location = 'cpu')
+epoch = 101
+modl = torch.load("/home/wjy/Project/refnoise_model/modl_mse_acc4_epoch_"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():
