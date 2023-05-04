@@ -56,6 +56,8 @@ recon_model = MoDL(
     k_iters = iters
 )
 recon_modol = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4")
+
+
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 batch_size = 1
@@ -102,3 +104,5 @@ for epoch in range(max_epochs):
     torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc4")
 
 # %%
+
+

@@ -56,8 +56,8 @@ import scipy.special as ss
 def NccLoss(x1,x2,ncc_effect):
     L = ncc_effect[0,:,:].squeeze()
     s2 = ncc_effect[1,:,:].squeeze()
-    x = x1*x2/s2
-    y = torch.sum(torch.square(x1)/(2*s2)-(torch.log(ss.ive(L-1,x))+x)+(L-1)*torch.log(x1))
+    x = 2*x1*x2/s2
+    y = torch.sum(torch.square(x1)/s2 - (torch.log(ss.ive(L-1,x))+x)+(L-1)*torch.log(x1))
     return y/torch.sum(torch.ones_like(x))
 
 from pytorch_msssim import SSIM
@@ -72,8 +72,8 @@ mask = mask.bool().unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
 
 # %% imnet loader
-epoch = 160
-imunet = torch.load('/home/wjy/Project/refnoise_model/imunet_mae_acc4_epoch'+str(epoch),map_location=torch.device('cpu'))
+epoch = 165
+imunet = torch.load('/home/wjy/Project/refnoise_model/imunet_mae_acc4_epoch_'+str(epoch),map_location=torch.device('cpu'))
 
 # %%
 with torch.no_grad():
@@ -142,11 +142,10 @@ for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
 print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
 
 # %% varnet loader
-epoch = 160
-sigma = 1
+epoch = 100
 cascades = 8
 chans = 16
-varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mae_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
+varnet = torch.load("/home/wjy/Project/refnoise_model/varnet_mse_acc4_cascades"+str(cascades)+"_channels"+str(chans)+"_epoch"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():
@@ -210,8 +209,8 @@ for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
 print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
 
 # %% modl loader
-epoch = 101
-modl = torch.load("/home/wjy/Project/refnoise_model/modl_mse_acc4_epoch_"+str(epoch),map_location = 'cpu')
+epoch = 150
+modl = torch.load("/home/wjy/Project/refnoise_model/modl_mae_acc4_epochs"+str(epoch),map_location = 'cpu')
 
 # %%
 with torch.no_grad():
