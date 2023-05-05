@@ -55,7 +55,7 @@ recon_model = MoDL(
     n_layers = layers,
     k_iters = iters
 )
-recon_modol = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc3")
+recon_modol = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc3")
 
 
 # %% training settings
