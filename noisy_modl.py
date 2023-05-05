@@ -55,7 +55,7 @@ recon_model = MoDL(
     n_layers = layers,
     k_iters = iters
 )
-recon_modol = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc4")
+recon_modol = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_mae_acc3")
 
 
 # %% training settings
@@ -101,7 +101,7 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     
-    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc4")
+    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc3")
 
 # %%
 
