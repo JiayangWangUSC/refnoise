@@ -56,7 +56,7 @@ recon_model = MoDL(
     k_iters = iters
 )
 
-recon_modol = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_ncc_acc3")
+recon_modol = torch.load("/project/jhaldar_118/jiayangw/refnoise/model/modl_mse_acc4")
 
 # %% training settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -69,7 +69,7 @@ L1Loss = torch.nn.L1Loss()
 
 # %% sampling mask
 mask = torch.zeros(ny,dtype=torch.int8)
-mask[torch.arange(132)*3] = 1
+mask[torch.arange(99)*4] = 1
 mask[torch.arange(186,210)] =1
 mask = mask.unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
@@ -105,6 +105,6 @@ for epoch in range(max_epochs):
         recon_optimizer.zero_grad()
 
     
-    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_ncc_acc3")
+    torch.save(recon_model,"/project/jhaldar_118/jiayangw/refnoise/model/modl_ncc_acc4")
 
 # %%
