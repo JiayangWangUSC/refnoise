@@ -72,8 +72,8 @@ mask = mask.bool().unsqueeze(0).unsqueeze(0).unsqueeze(3).repeat(nc,nx,1,2)
 
 
 # %% imnet loader
-epoch = 165
-imunet = torch.load('/home/wjy/Project/refnoise_model/imunet_mae_acc4_epoch_'+str(epoch),map_location=torch.device('cpu'))
+#epoch = 165
+imunet = torch.load('/home/wjy/Project/refnoise_model/imunet_ncc_acc4',map_location=torch.device('cpu'))
 
 # %%
 with torch.no_grad():
@@ -108,7 +108,8 @@ print("NCE:", NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_n
 
 # %%
 test_count = 0
-mse, mse_approx, mae, mae_approx, ssim, ssim_approx, nce = 0, 0, 0, 0, 0, 0, 0
+#mse, mse_approx, mae, mae_approx, ssim, ssim_approx, nce = 0, 0, 0, 0, 0, 0, 0
+nrmse, psnr, nmae, ssim, nrmse_approx, psnr_approx, nmae_approx, ssim_approx  = 0, 0, 0, 0, 0, 0, 0, 0
 
 for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
     test_count += 1
@@ -131,15 +132,20 @@ for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
         recon = MtoIm(recon)
 
         # evaluation
-        mse += L2Loss(recon,gt)
-        mse_approx += L2Loss(recon,gt_noise)
-        mae += L1Loss(recon,gt)
-        mae_approx += L1Loss(recon,gt_noise)
-        ssim += 1-ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0))
-        ssim_approx += 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0))
-        nce += NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect)
+        nrmse += torch.sqrt(L2Loss(recon,gt)/L2Loss(gt,0*gt))
+        psnr += 20*torch.log10(torch.max(gt)/torch.sqrt(L2Loss(recon,gt)))
+        nmae += L1Loss(recon,gt)/L1Loss(gt,0*gt)
+        ssim += ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0))
 
-print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
+        nrmse_approx += torch.sqrt(L2Loss(recon,gt_noise)/L2Loss(gt_noise,0*gt_noise))
+        psnr_approx += 20*torch.log10(torch.max(gt_noise)/torch.sqrt(L2Loss(recon,gt_noise)))
+        nmae_approx += L1Loss(recon,gt_noise)/L1Loss(gt_noise,0*gt_noise)
+        ssim_approx += ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0))
+    #   nce += NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect)
+
+#print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
+
+print(nrmse/test_count,psnr/test_count,nmae/test_count,ssim/test_count,nrmse_approx/test_count,psnr_approx/test_count,nmae_approx/test_count,ssim_approx/test_count)
 
 # %% varnet loader
 epoch = 100
@@ -177,7 +183,8 @@ print("NCE:", NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_n
 
 # %%
 test_count = 0
-mse, mse_approx, mae, mae_approx, ssim, ssim_approx, nce = 0, 0, 0, 0, 0, 0, 0
+#mse, mse_approx, mae, mae_approx, ssim, ssim_approx, nce = 0, 0, 0, 0, 0, 0, 0
+nrmse, psnr, nmae, ssim, nrmse_approx, psnr_approx, nmae_approx, ssim_approx  = 0, 0, 0, 0, 0, 0, 0, 0
 
 for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
     test_count += 1
@@ -195,18 +202,21 @@ for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
         recon_M = varnet(kspace_undersample, Mask, 24)
         recon = MtoIm(recon_M)     
 
-        # evaluation
-        mse += L2Loss(recon,gt)
-        mse_approx += L2Loss(recon,gt_noise)
-        mae += L1Loss(recon,gt)
-        mae_approx += L1Loss(recon,gt_noise)
+       # evaluation
+        nrmse += torch.sqrt(L2Loss(recon,gt)/L2Loss(gt,0*gt))
+        psnr += 20*torch.log10(torch.max(gt)/torch.sqrt(L2Loss(recon,gt)))
+        nmae += L1Loss(recon,gt)/L1Loss(gt,0*gt)
         ssim += 1-ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0))
-        ssim_approx += 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0))
-        if NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect) > 20:
-            break
-        nce += NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect)
 
-print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
+        nrmse_approx += torch.sqrt(L2Loss(recon,gt_noise)/L2Loss(gt_noise,0*gt_noise))
+        psnr_approx += 20*torch.log10(torch.max(gt_noise)/torch.sqrt(L2Loss(recon,gt_noise)))
+        nmae_approx += L1Loss(recon,gt_noise)/L1Loss(gt_noise,0*gt_noise)
+        ssim_approx += 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0))
+    #   nce += NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect)
+
+#print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
+
+print(nrmse/test_count,psnr/test_count,nmae/test_count,ssim/test_count,nrmse_approx/test_count,psnr_approx/test_count,nmae_approx/test_count,ssim_approx/test_count)
 
 # %% modl loader
 epoch = 150
@@ -248,7 +258,8 @@ print("NCE:", NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_n
 # %%
 # %%
 test_count = 0
-mse, mse_approx, mae, mae_approx, ssim, ssim_approx, nce = 0, 0, 0, 0, 0, 0, 0
+#mse, mse_approx, mae, mae_approx, ssim, ssim_approx, nce = 0, 0, 0, 0, 0, 0, 0
+nrmse, psnr, nmae, ssim, nrmse_approx, psnr_approx, nmae_approx, ssim_approx  = 0, 0, 0, 0, 0, 0, 0, 0
 
 for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
     test_count += 1
@@ -269,14 +280,19 @@ for kspace_noisy, kspace_clean, ncc_effect, sense_maps in test_data:
         recon = fastmri.complex_abs(torch.permute(recon,(0,2,3,1)))   
 
         # evaluation
-        mse += L2Loss(recon,gt)
-        mse_approx += L2Loss(recon,gt_noise)
-        mae += L1Loss(recon,gt)
-        mae_approx += L1Loss(recon,gt_noise)
+        nrmse += torch.sqrt(L2Loss(recon,gt)/L2Loss(gt,0*gt))
+        psnr += 20*torch.log10(torch.max(gt)/torch.sqrt(L2Loss(recon,gt)))
+        nmae += L1Loss(recon,gt)/L1Loss(gt,0*gt)
         ssim += 1-ssim_loss(recon.unsqueeze(0),gt.unsqueeze(0))
-        ssim_approx += 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0))
-        nce += NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect)
 
-print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
+        nrmse_approx += torch.sqrt(L2Loss(recon,gt_noise)/L2Loss(gt_noise,0*gt_noise))
+        psnr_approx += 20*torch.log10(torch.max(gt_noise)/torch.sqrt(L2Loss(recon,gt_noise)))
+        nmae_approx += L1Loss(recon,gt_noise)/L1Loss(gt_noise,0*gt_noise)
+        ssim_approx += 1-ssim_loss(recon.unsqueeze(0),gt_noise.unsqueeze(0))
+    #   nce += NccLoss(recon.squeeze(),gt_noise,ncc_effect)-NccLoss(gt_noise,gt_noise,ncc_effect)
+
+#print(mse/test_count,mse_approx/test_count,mae/test_count,mae_approx/test_count,ssim/test_count,ssim_approx/test_count,nce/test_count )
+
+print(nrmse/test_count,psnr/test_count,nmae/test_count,ssim/test_count,nrmse_approx/test_count,psnr_approx/test_count,nmae_approx/test_count,ssim_approx/test_count)
 
 # %%
